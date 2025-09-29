@@ -7,3 +7,4 @@ alwaysApply: true
 - Run `go mod tidy` after changes to `go.mod`.
 - Execute `go run .` instead of building and then running the built binary.
 - Prefer table-style unit tests.
+- Sort imports according to `gofmt`.
