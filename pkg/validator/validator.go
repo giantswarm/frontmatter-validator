@@ -41,26 +41,12 @@ func (v *Validator) ValidateFile(content, filePath, validationMode string) Valid
 		Checks:              []CheckResult{},
 	}
 
-	numLines := len(strings.Split(content, "\n"))
-
 	// Check for trailing newline
 	if !strings.HasSuffix(content, "\n") {
 		if !v.shouldSkipCheck(filePath, NoTrailingNewline) {
 			result.Checks = append(result.Checks, CheckResult{
 				Check: NoTrailingNewline,
-				Line:  numLines,
-			})
-		}
-		return result
-	}
-
-	// Check for frontmatter presence using the same regex as parseFrontMatter
-	re := regexp.MustCompile(`(?m)^---\n`)
-	if !re.MatchString(content) {
-		if !v.shouldSkipCheck(filePath, NoFrontMatter) {
-			result.Checks = append(result.Checks, CheckResult{
-				Check: NoFrontMatter,
-				Line:  1,
+				Line:  strings.Count(content, "\n"),
 			})
 		}
 		return result
@@ -68,7 +54,7 @@ func (v *Validator) ValidateFile(content, filePath, validationMode string) Valid
 
 	// Parse frontmatter
 	frontMatter, fmString, numFMLines, err := v.parseFrontMatter(content)
-	if err != nil {
+	if err != nil || frontMatter == nil {
 		if !v.shouldSkipCheck(filePath, NoFrontMatter) {
 			result.Checks = append(result.Checks, CheckResult{
 				Check: NoFrontMatter,
@@ -95,8 +81,9 @@ func (v *Validator) parseFrontMatter(content string) (*FrontMatter, string, int,
 	// Find frontmatter boundaries
 	re := regexp.MustCompile(`(?m)^---\n`)
 	matches := re.FindAllStringIndex(content, -1)
-
-	if len(matches) < 2 {
+	if len(matches) < 1 {
+		return nil, "", 0, nil
+	} else if len(matches) < 2 {
 		return nil, "", 0, fmt.Errorf("invalid frontmatter format")
 	}
 
@@ -104,11 +91,11 @@ func (v *Validator) parseFrontMatter(content string) (*FrontMatter, string, int,
 	end := matches[1][0]   // Before second "---"
 
 	fmString := content[start:end]
-	numLines := len(strings.Split(fmString, "\n"))
+	numLines := strings.Count(fmString, "\n")
 
 	var frontMatter FrontMatter
 	if err := yaml.Unmarshal([]byte(fmString), &frontMatter); err != nil {
-		return nil, "", 0, err
+		return nil, "", numLines, err
 	}
 
 	return &frontMatter, fmString, numLines, nil
