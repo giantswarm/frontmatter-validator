@@ -1,0 +1,8 @@
+---
+description: Local rules for this project
+alwaysApply: true
+---
+
+- Maintain the CHANGELOG.md file for all changes according to the "Keep a changelog" rules.
+- Run `go mod tidy` after changes to `go.mod`.
+- Execute `go run .` instead of building and then running the built binary.
