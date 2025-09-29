@@ -11,9 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.0.1] - 2025-09-29
 
+## [0.0.1] - 2025-09-29
+
 ### Added
 
 - First implementation
 
 [Unreleased]: https://github.com/giantswarm/frontmatter-validator/compare/v0.0.1...HEAD
+[0.0.1]: https://github.com/giantswarm/frontmatter-validator/compare/v0.0.1...v0.0.1
 [0.0.1]: https://github.com/giantswarm/frontmatter-validator/releases/tag/v0.0.1
