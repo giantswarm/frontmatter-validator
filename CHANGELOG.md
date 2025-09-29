@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed pluralization
+
 ## [0.1.1] - 2025-09-29
 
 ### Fixed
