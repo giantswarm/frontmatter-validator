@@ -1,7 +1,10 @@
 package output
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -10,240 +13,185 @@ import (
 	"github.com/giantswarm/frontmatter-validator/pkg/validator"
 )
 
-func TestDumpAnnotationsToFS_EmptyResults(t *testing.T) {
-	// Create a virtual filesystem
-	fs := afero.NewMemMapFs()
-	formatter := New()
-
-	results := make(map[string]validator.ValidationResult)
-
-	err := formatter.DumpAnnotationsToFS(fs, "test-annotations.json", results)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-
-	// Check that the file was created
-	exists, err := afero.Exists(fs, "test-annotations.json")
-	if err != nil {
-		t.Fatalf("Error checking file existence: %v", err)
-	}
-	if !exists {
-		t.Fatal("Expected annotations file to be created")
-	}
-
-	// Read and verify the content
-	content, err := afero.ReadFile(fs, "test-annotations.json")
-	if err != nil {
-		t.Fatalf("Error reading annotations file: %v", err)
-	}
-
-	// Should be an empty JSON array
-	var annotations []validator.Annotation
-	err = json.Unmarshal(content, &annotations)
-	if err != nil {
-		t.Fatalf("Error parsing JSON: %v", err)
-	}
-
-	if len(annotations) != 0 {
-		t.Errorf("Expected empty annotations array, got %d items", len(annotations))
-	}
-}
-
-func TestDumpAnnotationsToFS_SingleFileWithWarnings(t *testing.T) {
-	// Create a virtual filesystem
-	fs := afero.NewMemMapFs()
-	formatter := New()
-
-	// Create test results with warnings (using actual WARN severity checks)
-	results := map[string]validator.ValidationResult{
-		"test/file.md": {
-			NumFrontMatterLines: 5,
-			Checks: []validator.CheckResult{
-				{
-					Check: validator.NoLinkTitle,
-					Line:  3,
-				},
-				{
-					Check: validator.NoWeight,
-					Line:  2,
+func TestDumpAnnotationsToFS(t *testing.T) {
+	tests := []struct {
+		name            string
+		filename        string
+		results         map[string]validator.ValidationResult
+		expectedCount   int
+		expectedLevel   string
+		expectedTitle   string
+		expectedFile    string
+		expectedEndLine int
+		messageContains []string
+		description     string
+	}{
+		{
+			name:          "empty results",
+			filename:      "empty-annotations.json",
+			results:       make(map[string]validator.ValidationResult),
+			expectedCount: 0,
+			description:   "Should create empty JSON array for no validation results",
+		},
+		{
+			name:     "single file with warnings",
+			filename: "warnings-annotations.json",
+			results: map[string]validator.ValidationResult{
+				"test/file.md": {
+					NumFrontMatterLines: 5,
+					Checks: []validator.CheckResult{
+						{Check: validator.NoLinkTitle, Line: 3},
+						{Check: validator.NoWeight, Line: 2},
+					},
 				},
 			},
+			expectedCount:   1,
+			expectedLevel:   "warning",
+			expectedTitle:   "Found 2 less severe problems",
+			expectedFile:    "test/file.md",
+			expectedEndLine: 6, // NumFrontMatterLines + 1
+			messageContains: []string{
+				"WARN - The page should have a linkTitle",
+				"WARN - The page should have a weight attribute",
+			},
+			description: "Should create warning annotation for WARN severity checks",
+		},
+		{
+			name:     "single file with failures",
+			filename: "failures-annotations.json",
+			results: map[string]validator.ValidationResult{
+				"docs/critical.md": {
+					NumFrontMatterLines: 8,
+					Checks: []validator.CheckResult{
+						{Check: validator.NoTitle, Line: 1},
+						{Check: validator.NoDescription, Line: 1},
+					},
+				},
+			},
+			expectedCount:   1,
+			expectedLevel:   "failure",
+			expectedTitle:   "Found 2 severe problems",
+			expectedFile:    "docs/critical.md",
+			expectedEndLine: 9, // NumFrontMatterLines + 1
+			description:     "Should create failure annotation for FAIL severity checks",
+		},
+		{
+			name:     "mixed severities",
+			filename: "mixed-annotations.json",
+			results: map[string]validator.ValidationResult{
+				"docs/mixed.md": {
+					NumFrontMatterLines: 10,
+					Checks: []validator.CheckResult{
+						{Check: validator.NoTitle, Line: 2},          // FAIL
+						{Check: validator.ReviewTooLongAgo, Line: 5}, // WARN
+						{Check: validator.NoDescription, Line: 3},    // FAIL
+					},
+				},
+			},
+			expectedCount:   1,
+			expectedLevel:   "failure", // Should be failure due to presence of FAIL checks
+			expectedTitle:   "Found 2 severe and 1 less severe problems",
+			expectedFile:    "docs/mixed.md",
+			expectedEndLine: 11, // NumFrontMatterLines + 1
+			description:     "Should create failure annotation when both severities are present",
+		},
+		{
+			name:     "file with check values",
+			filename: "values-annotations.json",
+			results: map[string]validator.ValidationResult{
+				"test.md": {
+					NumFrontMatterLines: 4,
+					Checks: []validator.CheckResult{
+						{
+							Check: validator.LongTitle,
+							Value: "This is an extremely long title that definitely exceeds the maximum character limit",
+							Line:  2,
+						},
+					},
+				},
+			},
+			expectedCount:   1,
+			expectedLevel:   "failure",
+			expectedTitle:   "Found 1 severe problem",
+			expectedFile:    "test.md",
+			expectedEndLine: 5,
+			messageContains: []string{
+				"This is an extremely long title that definitely exceeds the maximum character limit",
+			},
+			description: "Should include check values in annotation messages",
 		},
 	}
 
-	err := formatter.DumpAnnotationsToFS(fs, "test-annotations.json", results)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a virtual filesystem
+			fs := afero.NewMemMapFs()
+			formatter := New()
 
-	// Read and verify the content
-	content, err := afero.ReadFile(fs, "test-annotations.json")
-	if err != nil {
-		t.Fatalf("Error reading annotations file: %v", err)
-	}
+			err := formatter.DumpAnnotationsToFS(fs, tt.filename, tt.results)
+			if err != nil {
+				t.Fatalf("%s: Expected no error, got %v", tt.description, err)
+			}
 
-	var annotations []validator.Annotation
-	err = json.Unmarshal(content, &annotations)
-	if err != nil {
-		t.Fatalf("Error parsing JSON: %v", err)
-	}
+			// Check that the file was created
+			exists, err := afero.Exists(fs, tt.filename)
+			if err != nil {
+				t.Fatalf("%s: Error checking file existence: %v", tt.description, err)
+			}
+			if !exists {
+				t.Fatalf("%s: Expected annotations file to be created", tt.description)
+			}
 
-	if len(annotations) != 1 {
-		t.Fatalf("Expected 1 annotation, got %d", len(annotations))
-	}
+			// Read and verify the content
+			content, err := afero.ReadFile(fs, tt.filename)
+			if err != nil {
+				t.Fatalf("%s: Error reading annotations file: %v", tt.description, err)
+			}
 
-	annotation := annotations[0]
+			var annotations []validator.Annotation
+			err = json.Unmarshal(content, &annotations)
+			if err != nil {
+				t.Fatalf("%s: Error parsing JSON: %v", tt.description, err)
+			}
 
-	// Verify annotation fields
-	if annotation.File != "test/file.md" {
-		t.Errorf("Expected file 'test/file.md', got '%s'", annotation.File)
-	}
+			if len(annotations) != tt.expectedCount {
+				t.Errorf("%s: Expected %d annotations, got %d", tt.description, tt.expectedCount, len(annotations))
+			}
 
-	if annotation.Line != 1 {
-		t.Errorf("Expected line 1, got %d", annotation.Line)
-	}
+			// Skip detailed checks for empty results
+			if tt.expectedCount == 0 {
+				return
+			}
 
-	if annotation.EndLine != 6 { // NumFrontMatterLines + 1
-		t.Errorf("Expected end line 6, got %d", annotation.EndLine)
-	}
+			annotation := annotations[0]
 
-	if annotation.AnnotationLevel != "warning" {
-		t.Errorf("Expected annotation level 'warning', got '%s'", annotation.AnnotationLevel)
-	}
+			if annotation.File != tt.expectedFile {
+				t.Errorf("%s: Expected file '%s', got '%s'", tt.description, tt.expectedFile, annotation.File)
+			}
 
-	expectedTitle := "Found 2 less severe problems"
-	if annotation.Title != expectedTitle {
-		t.Errorf("Expected title '%s', got '%s'", expectedTitle, annotation.Title)
-	}
+			if annotation.Line != 1 {
+				t.Errorf("%s: Expected line 1, got %d", tt.description, annotation.Line)
+			}
 
-	// Check that message contains both check descriptions
-	if !strings.Contains(annotation.Message, "WARN - The page should have a linkTitle") {
-		t.Error("Expected message to contain linkTitle warning")
-	}
+			if annotation.EndLine != tt.expectedEndLine {
+				t.Errorf("%s: Expected end line %d, got %d", tt.description, tt.expectedEndLine, annotation.EndLine)
+			}
 
-	if !strings.Contains(annotation.Message, "WARN - The page should have a weight attribute") {
-		t.Error("Expected message to contain weight warning")
-	}
-}
+			if annotation.AnnotationLevel != tt.expectedLevel {
+				t.Errorf("%s: Expected annotation level '%s', got '%s'", tt.description, tt.expectedLevel, annotation.AnnotationLevel)
+			}
 
-func TestDumpAnnotationsToFS_SingleFileWithFailures(t *testing.T) {
-	// Create a virtual filesystem
-	fs := afero.NewMemMapFs()
-	formatter := New()
+			if annotation.Title != tt.expectedTitle {
+				t.Errorf("%s: Expected title '%s', got '%s'", tt.description, tt.expectedTitle, annotation.Title)
+			}
 
-	// Create test results with failures
-	results := map[string]validator.ValidationResult{
-		"docs/critical.md": {
-			NumFrontMatterLines: 8,
-			Checks: []validator.CheckResult{
-				{
-					Check: validator.NoTitle,
-					Line:  1,
-				},
-				{
-					Check: validator.NoDescription,
-					Line:  1,
-				},
-			},
-		},
-	}
-
-	err := formatter.DumpAnnotationsToFS(fs, "critical-annotations.json", results)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-
-	// Read and verify the content
-	content, err := afero.ReadFile(fs, "critical-annotations.json")
-	if err != nil {
-		t.Fatalf("Error reading annotations file: %v", err)
-	}
-
-	var annotations []validator.Annotation
-	err = json.Unmarshal(content, &annotations)
-	if err != nil {
-		t.Fatalf("Error parsing JSON: %v", err)
-	}
-
-	if len(annotations) != 1 {
-		t.Fatalf("Expected 1 annotation, got %d", len(annotations))
-	}
-
-	annotation := annotations[0]
-
-	// Should be marked as failure due to FAIL severity checks
-	if annotation.AnnotationLevel != "failure" {
-		t.Errorf("Expected annotation level 'failure', got '%s'", annotation.AnnotationLevel)
-	}
-
-	expectedTitle := "Found 2 severe problems"
-	if annotation.Title != expectedTitle {
-		t.Errorf("Expected title '%s', got '%s'", expectedTitle, annotation.Title)
-	}
-}
-
-func TestDumpAnnotationsToFS_MixedSeverities(t *testing.T) {
-	// Create a virtual filesystem
-	fs := afero.NewMemMapFs()
-	formatter := New()
-
-	// Create test results with mixed severities
-	results := map[string]validator.ValidationResult{
-		"docs/mixed.md": {
-			NumFrontMatterLines: 10,
-			Checks: []validator.CheckResult{
-				{
-					Check: validator.NoTitle, // FAIL
-					Line:  2,
-				},
-				{
-					Check: validator.ReviewTooLongAgo, // WARN
-					Line:  5,
-				},
-				{
-					Check: validator.NoDescription, // FAIL
-					Line:  3,
-				},
-			},
-		},
-	}
-
-	err := formatter.DumpAnnotationsToFS(fs, "mixed-annotations.json", results)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-
-	// Read and verify the content
-	content, err := afero.ReadFile(fs, "mixed-annotations.json")
-	if err != nil {
-		t.Fatalf("Error reading annotations file: %v", err)
-	}
-
-	var annotations []validator.Annotation
-	err = json.Unmarshal(content, &annotations)
-	if err != nil {
-		t.Fatalf("Error parsing JSON: %v", err)
-	}
-
-	if len(annotations) != 1 {
-		t.Fatalf("Expected 1 annotation, got %d", len(annotations))
-	}
-
-	annotation := annotations[0]
-
-	// Should be marked as failure due to presence of FAIL severity checks
-	if annotation.AnnotationLevel != "failure" {
-		t.Errorf("Expected annotation level 'failure', got '%s'", annotation.AnnotationLevel)
-	}
-
-	expectedTitle := "Found 2 severe and 1 less severe problems"
-	if annotation.Title != expectedTitle {
-		t.Errorf("Expected title '%s', got '%s'", expectedTitle, annotation.Title)
-	}
-
-	// Verify end line calculation - should be max of all check lines
-	if annotation.EndLine != 11 { // max(2,5,3) = 5, but fallback to NumFrontMatterLines+1 = 11
-		t.Errorf("Expected end line 11, got %d", annotation.EndLine)
+			// Check message contents
+			for _, expectedContent := range tt.messageContains {
+				if !strings.Contains(annotation.Message, expectedContent) {
+					t.Errorf("%s: Expected message to contain '%s', got message: %s", tt.description, expectedContent, annotation.Message)
+				}
+			}
+		})
 	}
 }
 
@@ -298,9 +246,10 @@ func TestDumpAnnotationsToFS_MultipleFiles(t *testing.T) {
 	// Find annotations by file (order may vary due to map iteration)
 	var file1Annotation, file2Annotation *validator.Annotation
 	for i := range annotations {
-		if annotations[i].File == "docs/file1.md" {
+		switch annotations[i].File {
+		case "docs/file1.md":
 			file1Annotation = &annotations[i]
-		} else if annotations[i].File == "docs/file2.md" {
+		case "docs/file2.md":
 			file2Annotation = &annotations[i]
 		}
 	}
@@ -320,55 +269,6 @@ func TestDumpAnnotationsToFS_MultipleFiles(t *testing.T) {
 	// Verify file2 annotation (failure)
 	if file2Annotation.AnnotationLevel != "failure" {
 		t.Errorf("Expected file2 annotation level 'failure', got '%s'", file2Annotation.AnnotationLevel)
-	}
-}
-
-func TestDumpAnnotationsToFS_WithCheckValues(t *testing.T) {
-	// Create a virtual filesystem
-	fs := afero.NewMemMapFs()
-	formatter := New()
-
-	// Create test results with check values
-	results := map[string]validator.ValidationResult{
-		"test.md": {
-			NumFrontMatterLines: 4,
-			Checks: []validator.CheckResult{
-				{
-					Check: validator.LongTitle,
-					Value: "This is an extremely long title that definitely exceeds the maximum character limit",
-					Line:  2,
-				},
-			},
-		},
-	}
-
-	err := formatter.DumpAnnotationsToFS(fs, "values-annotations.json", results)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
-
-	// Read and verify the content
-	content, err := afero.ReadFile(fs, "values-annotations.json")
-	if err != nil {
-		t.Fatalf("Error reading annotations file: %v", err)
-	}
-
-	var annotations []validator.Annotation
-	err = json.Unmarshal(content, &annotations)
-	if err != nil {
-		t.Fatalf("Error parsing JSON: %v", err)
-	}
-
-	if len(annotations) != 1 {
-		t.Fatalf("Expected 1 annotation, got %d", len(annotations))
-	}
-
-	annotation := annotations[0]
-
-	// Check that the message contains the check value
-	expectedValue := "This is an extremely long title that definitely exceeds the maximum character limit"
-	if !strings.Contains(annotation.Message, expectedValue) {
-		t.Errorf("Expected message to contain check value '%s', got message: %s", expectedValue, annotation.Message)
 	}
 }
 
@@ -459,5 +359,354 @@ func TestBuildAnnotations_EdgeCases(t *testing.T) {
 
 	if annotation.EndLine != 1 {
 		t.Errorf("Expected end line 1, got %d", annotation.EndLine)
+	}
+}
+
+func TestColorFunctions(t *testing.T) {
+	formatter := New()
+
+	tests := []struct {
+		name        string
+		function    func(string) string
+		input       string
+		expected    string
+		description string
+	}{
+		{
+			name:        "colorSeverity_FAIL",
+			function:    formatter.colorSeverity,
+			input:       validator.SeverityFail,
+			expected:    "\033[1;31mFAIL\033[0m",
+			description: "Should format FAIL severity with bold red color",
+		},
+		{
+			name:        "colorSeverity_WARN",
+			function:    formatter.colorSeverity,
+			input:       validator.SeverityWarn,
+			expected:    "\033[1;33mWARN\033[0m",
+			description: "Should format WARN severity with bold yellow color",
+		},
+		{
+			name:        "colorSeverity_unknown",
+			function:    formatter.colorSeverity,
+			input:       "UNKNOWN",
+			expected:    "UNKNOWN",
+			description: "Should return input unchanged for unknown severity",
+		},
+		{
+			name:        "colorHeadline",
+			function:    formatter.colorHeadline,
+			input:       "TEST_CHECK",
+			expected:    "\033[37mTEST_CHECK\033[0m",
+			description: "Should format headlines with white color",
+		},
+		{
+			name:        "colorLiteral",
+			function:    formatter.colorLiteral,
+			input:       "test value",
+			expected:    "\033[36mtest value\033[0m",
+			description: "Should format literals with cyan color",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.function(tt.input)
+			if result != tt.expected {
+				t.Errorf("%s: expected '%s', got '%s'", tt.description, tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestPrintJSON(t *testing.T) {
+	tests := []struct {
+		name        string
+		results     map[string]validator.ValidationResult
+		expectedLen int
+		checkTitle  string
+		checkOwner  []string
+		description string
+	}{
+		{
+			name:        "empty results",
+			results:     make(map[string]validator.ValidationResult),
+			expectedLen: 0,
+			description: "Should output empty JSON array for no results",
+		},
+		{
+			name: "single result with title and owner",
+			results: map[string]validator.ValidationResult{
+				"docs/test.md": {
+					Checks: []validator.CheckResult{
+						{
+							Check: validator.ReviewTooLongAgo,
+							Title: "Test Document",
+							Owner: []string{"https://github.com/orgs/giantswarm/teams/team-honeybadger"},
+						},
+					},
+				},
+			},
+			expectedLen: 1,
+			checkTitle:  "Test Document",
+			checkOwner:  []string{"team/honeybadger"},
+			description: "Should format JSON output with title and extracted team name",
+		},
+		{
+			name: "result without title should be skipped",
+			results: map[string]validator.ValidationResult{
+				"docs/test.md": {
+					Checks: []validator.CheckResult{
+						{
+							Check: validator.NoTitle,
+							// No Title field - should be skipped
+						},
+					},
+				},
+			},
+			expectedLen: 0,
+			description: "Should skip checks without titles",
+		},
+		{
+			name: "multiple owners",
+			results: map[string]validator.ValidationResult{
+				"docs/test.md": {
+					Checks: []validator.CheckResult{
+						{
+							Check: validator.ReviewTooLongAgo,
+							Title: "Multi-Owner Doc",
+							Owner: []string{
+								"https://github.com/orgs/giantswarm/teams/team-honeybadger",
+								"https://github.com/orgs/giantswarm/teams/team-phoenix",
+							},
+						},
+					},
+				},
+			},
+			expectedLen: 1,
+			checkTitle:  "Multi-Owner Doc",
+			checkOwner:  []string{"team/honeybadger", "team/phoenix"},
+			description: "Should extract multiple team names from owner URLs",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Capture stdout
+			oldStdout := os.Stdout
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+
+			formatter := New()
+			formatter.PrintJSON(tt.results)
+
+			// Restore stdout
+			w.Close()
+			os.Stdout = oldStdout
+
+			// Read captured output
+			var buf bytes.Buffer
+			io.Copy(&buf, r)
+			output := buf.String()
+
+			// Parse JSON output
+			var jsonOutput []validator.JSONOutput
+			err := json.Unmarshal([]byte(output), &jsonOutput)
+			if err != nil {
+				t.Fatalf("%s: Failed to parse JSON output: %v\nOutput: %s", tt.description, err, output)
+			}
+
+			if len(jsonOutput) != tt.expectedLen {
+				t.Errorf("%s: Expected %d items, got %d", tt.description, tt.expectedLen, len(jsonOutput))
+			}
+
+			if tt.expectedLen > 0 {
+				item := jsonOutput[0]
+
+				expectedTitle := "Doc entry \"" + tt.checkTitle + "\" needs to be reviewed"
+				if item.Title != expectedTitle {
+					t.Errorf("%s: Expected title '%s', got '%s'", tt.description, expectedTitle, item.Title)
+				}
+
+				if len(item.Owner) != len(tt.checkOwner) {
+					t.Errorf("%s: Expected %d owners, got %d", tt.description, len(tt.checkOwner), len(item.Owner))
+				} else {
+					for i, expectedOwner := range tt.checkOwner {
+						if item.Owner[i] != expectedOwner {
+							t.Errorf("%s: Expected owner[%d] '%s', got '%s'", tt.description, i, expectedOwner, item.Owner[i])
+						}
+					}
+				}
+
+				// Check that message contains the docs host URL
+				if !strings.Contains(item.Message, validator.DocsHost) {
+					t.Errorf("%s: Expected message to contain docs host URL", tt.description)
+				}
+			}
+		})
+	}
+}
+
+func TestMaxInt(t *testing.T) {
+	tests := []struct {
+		a, b, expected int
+		description    string
+	}{
+		{5, 3, 5, "Should return first value when it's larger"},
+		{2, 8, 8, "Should return second value when it's larger"},
+		{4, 4, 4, "Should return either value when they're equal"},
+		{-1, -5, -1, "Should work with negative numbers"},
+		{0, -1, 0, "Should work with zero"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			result := maxInt(tt.a, tt.b)
+			if result != tt.expected {
+				t.Errorf("%s: maxInt(%d, %d) = %d, expected %d", tt.description, tt.a, tt.b, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestPrintStdout(t *testing.T) {
+	tests := []struct {
+		name            string
+		results         map[string]validator.ValidationResult
+		expectedOutputs []string
+		expectedCounts  []string
+		description     string
+	}{
+		{
+			name:            "empty results",
+			results:         make(map[string]validator.ValidationResult),
+			expectedOutputs: []string{}, // Should only show summary
+			expectedCounts:  []string{},
+			description:     "Should show empty output for no validation results",
+		},
+		{
+			name: "single file with failures",
+			results: map[string]validator.ValidationResult{
+				"docs/test.md": {
+					Checks: []validator.CheckResult{
+						{Check: validator.NoTitle},
+						{Check: validator.NoDescription},
+					},
+				},
+			},
+			expectedOutputs: []string{
+				"docs/test.md",
+				"NO_TITLE",
+				"NO_DESCRIPTION",
+			},
+			expectedCounts: []string{
+				"Found 2 critical problems",
+			},
+			description: "Should display file path, check names, and failure count",
+		},
+		{
+			name: "single file with warnings",
+			results: map[string]validator.ValidationResult{
+				"docs/test.md": {
+					Checks: []validator.CheckResult{
+						{Check: validator.NoWeight},
+						{Check: validator.NoLinkTitle},
+					},
+				},
+			},
+			expectedOutputs: []string{
+				"docs/test.md",
+				"NO_WEIGHT",
+				"NO_LINK_TITLE",
+			},
+			expectedCounts: []string{
+				"Found 2 less severe problems",
+			},
+			description: "Should display warnings and warning count",
+		},
+		{
+			name: "mixed severities",
+			results: map[string]validator.ValidationResult{
+				"docs/test.md": {
+					Checks: []validator.CheckResult{
+						{Check: validator.NoTitle},       // FAIL
+						{Check: validator.NoWeight},      // WARN
+						{Check: validator.NoDescription}, // FAIL
+					},
+				},
+			},
+			expectedOutputs: []string{
+				"docs/test.md",
+				"NO_TITLE",
+				"NO_DESCRIPTION",
+				"NO_WEIGHT",
+			},
+			expectedCounts: []string{
+				"Found 2 critical problems",
+				"Found 1 less severe problem",
+			},
+			description: "Should group failures first, then warnings, with separate counts",
+		},
+		{
+			name: "multiple files",
+			results: map[string]validator.ValidationResult{
+				"docs/file1.md": {
+					Checks: []validator.CheckResult{
+						{Check: validator.NoTitle},
+					},
+				},
+				"docs/file2.md": {
+					Checks: []validator.CheckResult{
+						{Check: validator.NoWeight},
+					},
+				},
+			},
+			expectedOutputs: []string{
+				"file1.md", // Should contain both filenames
+				"file2.md",
+				"NO_TITLE",
+				"NO_WEIGHT",
+			},
+			expectedCounts: []string{
+				"Found 1 critical problem",
+				"Found 1 less severe problem",
+			},
+			description: "Should handle multiple files with different severities",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Capture stdout
+			oldStdout := os.Stdout
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+
+			formatter := New()
+			formatter.PrintStdout(tt.results)
+
+			// Restore stdout
+			w.Close()
+			os.Stdout = oldStdout
+
+			// Read captured output
+			var buf bytes.Buffer
+			io.Copy(&buf, r)
+			output := buf.String()
+
+			// Check expected outputs are present
+			for _, expectedOutput := range tt.expectedOutputs {
+				if !strings.Contains(output, expectedOutput) {
+					t.Errorf("%s: Expected output to contain '%s', got:\n%s", tt.description, expectedOutput, output)
+				}
+			}
+
+			// Check expected count messages are present
+			for _, expectedCount := range tt.expectedCounts {
+				if !strings.Contains(output, expectedCount) {
+					t.Errorf("%s: Expected output to contain '%s', got:\n%s", tt.description, expectedCount, output)
+				}
+			}
+		})
 	}
 }

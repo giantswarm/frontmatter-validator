@@ -62,10 +62,10 @@ func (f *Formatter) PrintStdout(results map[string]validator.ValidationResult) {
 
 	fmt.Println()
 	if nFails > 0 {
-		fmt.Printf("Found %d critical problems, marked with %s.\n", nFails, f.colorSeverity(validator.SeverityFail))
+		fmt.Printf("Found %d critical problem%s, marked with %s.\n", nFails, pluralize(nFails), f.colorSeverity(validator.SeverityFail))
 	}
 	if nWarnings > 0 {
-		fmt.Printf("Found %d less severe problems, marked with %s.\n", nWarnings, f.colorSeverity(validator.SeverityWarn))
+		fmt.Printf("Found %d less severe problem%s, marked with %s.\n", nWarnings, pluralize(nWarnings), f.colorSeverity(validator.SeverityWarn))
 	}
 }
 
@@ -165,11 +165,11 @@ func (f *Formatter) buildAnnotations(results map[string]validator.ValidationResu
 
 		var headline string
 		if nWarnings > 0 && nFails > 0 {
-			headline = fmt.Sprintf("Found %d severe and %d less severe problems", nFails, nWarnings)
+			headline = fmt.Sprintf("Found %d severe and %d less severe problem%s", nFails, nWarnings, pluralize(nWarnings+nFails))
 		} else if nFails > 0 {
-			headline = fmt.Sprintf("Found %d severe problems", nFails)
+			headline = fmt.Sprintf("Found %d severe problem%s", nFails, pluralize(nFails))
 		} else {
-			headline = fmt.Sprintf("Found %d less severe problems", nWarnings)
+			headline = fmt.Sprintf("Found %d less severe problem%s", nWarnings, pluralize(nWarnings))
 		}
 
 		annotations = append(annotations, validator.Annotation{
@@ -226,4 +226,12 @@ func maxInt(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// pluralize returns the plural form of a word
+func pluralize(n int) string {
+	if n == 1 {
+		return ""
+	}
+	return "s"
 }

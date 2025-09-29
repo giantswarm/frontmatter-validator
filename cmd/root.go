@@ -113,7 +113,7 @@ func getFilesToProcess() ([]string, error) {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			line := strings.TrimSpace(scanner.Text())
-			if line != "" && strings.HasPrefix(line, targetPath) && strings.HasSuffix(line, ".md") {
+			if line != "" && strings.HasSuffix(line, ".md") {
 				filePaths = append(filePaths, line)
 				fmt.Printf("Adding to files checked: %s\n", line)
 			}
