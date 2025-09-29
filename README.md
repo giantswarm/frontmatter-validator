@@ -86,9 +86,6 @@ cd frontmatter-validator
 
 # Build the binary
 go build -o frontmatter-validator .
-
-# Or use the Makefile
-make build
 ```
 
 ### Command Line Usage
