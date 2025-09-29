@@ -6,8 +6,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/giantswarm/frontmatter-validator/pkg/validator"
 	"github.com/spf13/afero"
+
+	"github.com/giantswarm/frontmatter-validator/pkg/validator"
 )
 
 // Formatter handles different output formats
