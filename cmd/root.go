@@ -47,6 +47,11 @@ func init() {
 }
 
 func runValidation(cmd *cobra.Command, args []string) error {
+	// Validate the validation mode flag
+	if err := validateValidationMode(validationMode); err != nil {
+		return err
+	}
+
 	v := validator.NewWithExcludes(excludePatterns)
 	formatter := output.New()
 	results := make(map[string]validator.ValidationResult)
@@ -144,4 +149,14 @@ func fileExists(filename string) bool {
 		return false
 	}
 	return !info.IsDir()
+}
+
+// validateValidationMode validates the validation mode flag value
+func validateValidationMode(mode string) error {
+	switch mode {
+	case validator.ValidateAll, validator.ValidateLastReviewDate:
+		return nil
+	default:
+		return fmt.Errorf("invalid validation mode '%s'. Valid options are: 'all', 'last-reviewed'", mode)
+	}
 }
