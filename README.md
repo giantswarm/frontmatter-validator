@@ -186,34 +186,5 @@ Provides colored output with severity levels:
 - 🟡 **WARN**: Less severe issues that should be addressed
 
 #### JSON Output
+
 Structured output suitable for integration with issue tracking systems and CI/CD pipelines.
-
-## Development
-
-### Running Tests
-
-```bash
-# Run all tests
-go test -v ./...
-
-# Or use the Makefile
-make test
-```
-
-### Project Structure
-
-```
-├── main.go                    # Application entry point
-├── cmd/                       # CLI command definitions
-│   └── root.go               # Root command implementation
-├── pkg/
-│   ├── validator/            # Core validation logic
-│   │   ├── types.go         # Type definitions
-│   │   ├── checks.go        # Validation rules configuration
-│   │   ├── validator.go     # Main validation implementation
-│   │   └── validator_test.go # Unit tests
-│   └── output/              # Output formatting
-│       └── formatter.go     # Output formatters (stdout, JSON, annotations)
-└── legacy-python/           # Original Python implementation (reference)
-    └── script.py
-```
