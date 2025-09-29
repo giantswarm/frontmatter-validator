@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix STDIN input validation to accept any `.md` file paths regardless of `--path` flag
+- Remove incorrect targetPath prefix check that was filtering valid file paths from STDIN
+
+### Added
+
+- Add comprehensive test suite for STDIN input handling in `cmd/root_test.go`
+- Add virtual filesystem tests for annotations JSON writing using Afero library
+- Add `DumpAnnotationsToFS` method to support testable filesystem operations
+
 ## [0.1.0] - 2025-09-29
 
 ### Changed

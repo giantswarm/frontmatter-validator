@@ -5,8 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/giantswarm/frontmatter-validator/pkg/validator"
 	"github.com/spf13/afero"
+
+	"github.com/giantswarm/frontmatter-validator/pkg/validator"
 )
 
 func TestDumpAnnotationsToFS_EmptyResults(t *testing.T) {
