@@ -275,7 +275,7 @@ jobs:
           - windows-amd64
     env:
       GITHUB_TOKEN: "${{ secrets.TAYLORBOT_GITHUB_ACTION }}"
-      GO_VERSION: 1.21.3
+      GO_VERSION: 1.23.0
       ARTIFACT_DIR: bin-dist
       TAG: v${{ needs.gather_facts.outputs.version }}
       CODE_SIGNING_CERT_BUNDLE_BASE64: ${{ secrets.CODE_SIGNING_CERT_BUNDLE_BASE64 }}

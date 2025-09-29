@@ -3,11 +3,11 @@ package output
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
 	"github.com/giantswarm/frontmatter-validator/pkg/validator"
+	"github.com/spf13/afero"
 )
 
 // Formatter handles different output formats
@@ -106,8 +106,28 @@ func (f *Formatter) PrintJSON(results map[string]validator.ValidationResult) {
 	fmt.Println(string(jsonBytes))
 }
 
-// DumpAnnotations creates GitHub Actions annotations file
+// DumpAnnotations creates GitHub Actions annotations file using the OS filesystem
 func (f *Formatter) DumpAnnotations(results map[string]validator.ValidationResult) error {
+	return f.DumpAnnotationsToFS(afero.NewOsFs(), "annotations.json", results)
+}
+
+// DumpAnnotationsToFS creates GitHub Actions annotations file using the provided filesystem
+func (f *Formatter) DumpAnnotationsToFS(fs afero.Fs, filename string, results map[string]validator.ValidationResult) error {
+	annotations := f.buildAnnotations(results)
+
+	file, err := fs.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(annotations)
+}
+
+// buildAnnotations creates the annotations data structure from validation results
+func (f *Formatter) buildAnnotations(results map[string]validator.ValidationResult) []validator.Annotation {
 	var annotations []validator.Annotation
 
 	for filePath, result := range results {
@@ -161,15 +181,7 @@ func (f *Formatter) DumpAnnotations(results map[string]validator.ValidationResul
 		})
 	}
 
-	file, err := os.Create("annotations.json")
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	encoder.SetIndent("", "  ")
-	return encoder.Encode(annotations)
+	return annotations
 }
 
 // printCheckResult prints a single check result with formatting
