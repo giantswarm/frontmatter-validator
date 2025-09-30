@@ -44,11 +44,10 @@ const (
 
 // Check represents a validation check
 type Check struct {
-	ID          string   `json:"id"`
-	Description string   `json:"description"`
-	Severity    string   `json:"severity"`
-	HasValue    bool     `json:"has_value,omitempty"`
-	IgnorePaths []string `json:"ignore_paths,omitempty"`
+	ID          string `json:"id"`
+	Description string `json:"description"`
+	Severity    string `json:"severity"`
+	HasValue    bool   `json:"has_value,omitempty"`
 }
 
 // CheckResult represents the result of a single validation check

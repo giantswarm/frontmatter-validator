@@ -10,15 +10,16 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/giantswarm/frontmatter-validator/pkg/config"
 	"github.com/giantswarm/frontmatter-validator/pkg/output"
 	"github.com/giantswarm/frontmatter-validator/pkg/validator"
 )
 
 var (
-	validationMode  string
-	outputFormat    string
-	targetPath      string
-	excludePatterns []string
+	validationMode string
+	outputFormat   string
+	targetPath     string
+	configPath     string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -43,7 +44,7 @@ func init() {
 	rootCmd.Flags().StringVar(&validationMode, "validation", "all", "Which validation to run. Use 'last-reviewed' or 'all'")
 	rootCmd.Flags().StringVar(&outputFormat, "output", "stdout", "Output format: 'json' or 'stdout'")
 	rootCmd.Flags().StringVar(&targetPath, "path", ".", "Target path to scan for Markdown files")
-	rootCmd.Flags().StringArrayVar(&excludePatterns, "exclude", []string{}, "Exclude paths from checks. Format: 'path' (all checks) or 'path:CHECK_NAME' (specific check). Can be used multiple times.")
+	rootCmd.Flags().StringVar(&configPath, "config", "./frontmatter-validator.yaml", "Path to configuration file")
 }
 
 func runValidation(cmd *cobra.Command, args []string) error {
@@ -52,7 +53,14 @@ func runValidation(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	v := validator.NewWithExcludes(excludePatterns)
+	// Load configuration
+	configManager, err := config.NewManager(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to load configuration: %w", err)
+	}
+
+	// Create validator with configuration
+	v := validator.NewWithConfig(configManager)
 	formatter := output.New()
 	results := make(map[string]validator.ValidationResult)
 

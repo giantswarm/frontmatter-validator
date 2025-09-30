@@ -129,19 +129,7 @@ last_review_date: 2020-01-01
 	}
 }
 
-func TestIsIgnoredPath(t *testing.T) {
-	v := New()
-
-	// Test that CRD paths are ignored for NO_DESCRIPTION
-	if !v.isIgnoredPath("src/content/reference/platform-api/crd/test.md", NoDescription) {
-		t.Error("Expected CRD path to be ignored for NO_DESCRIPTION check")
-	}
-
-	// Test that regular paths are not ignored
-	if v.isIgnoredPath("src/content/docs/test.md", NoDescription) {
-		t.Error("Expected regular path to not be ignored for NO_DESCRIPTION check")
-	}
-}
+// TestIsIgnoredPath has been removed as ignore paths are now handled by the configuration system
 
 func TestParseFrontMatter(t *testing.T) {
 	v := New()
