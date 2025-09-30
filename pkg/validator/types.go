@@ -35,18 +35,18 @@ const (
 	ShortTitle            = "SHORT_TITLE"
 	UnknownAttribute      = "UNKNOWN_ATTRIBUTE"
 	// Runbook checks
-	RunbookLayoutNotSet           = "RUNBOOK_LAYOUT_NOT_SET"
-	InvalidRunbookVariables       = "INVALID_RUNBOOK_VARIABLES"
-	RunbookVariableWithoutName    = "RUNBOOK_VARIABLE_WITHOUT_NAME"
-	InvalidRunbookVariableName    = "INVALID_RUNBOOK_VARIABLE_NAME"
-	InvalidRunbookVariable        = "INVALID_RUNBOOK_VARIABLE"
-	InvalidRunbookDashboards      = "INVALID_RUNBOOK_DASHBOARDS"
-	InvalidRunbookDashboard       = "INVALID_RUNBOOK_DASHBOARD"
-	InvalidRunbookDashboardLink   = "INVALID_RUNBOOK_DASHBOARD_LINK"
-	InvalidRunbookKnownIssues     = "INVALID_RUNBOOK_KNOWN_ISSUES"
-	InvalidRunbookKnownIssue      = "INVALID_RUNBOOK_KNOWN_ISSUE"
-	InvalidRunbookKnownIssueURL   = "INVALID_RUNBOOK_KNOWN_ISSUE_URL"
-	RunbookAppearsInMenu          = "RUNBOOK_APPEARS_IN_MENU"
+	RunbookLayoutNotSet         = "RUNBOOK_LAYOUT_NOT_SET"
+	InvalidRunbookVariables     = "INVALID_RUNBOOK_VARIABLES"
+	RunbookVariableWithoutName  = "RUNBOOK_VARIABLE_WITHOUT_NAME"
+	InvalidRunbookVariableName  = "INVALID_RUNBOOK_VARIABLE_NAME"
+	InvalidRunbookVariable      = "INVALID_RUNBOOK_VARIABLE"
+	InvalidRunbookDashboards    = "INVALID_RUNBOOK_DASHBOARDS"
+	InvalidRunbookDashboard     = "INVALID_RUNBOOK_DASHBOARD"
+	InvalidRunbookDashboardLink = "INVALID_RUNBOOK_DASHBOARD_LINK"
+	InvalidRunbookKnownIssues   = "INVALID_RUNBOOK_KNOWN_ISSUES"
+	InvalidRunbookKnownIssue    = "INVALID_RUNBOOK_KNOWN_ISSUE"
+	InvalidRunbookKnownIssueURL = "INVALID_RUNBOOK_KNOWN_ISSUE_URL"
+	RunbookAppearsInMenu        = "RUNBOOK_APPEARS_IN_MENU"
 )
 
 // Severity levels
@@ -100,9 +100,9 @@ type RunbookKnownIssue struct {
 
 // Runbook represents the runbook configuration
 type Runbook struct {
-	Variables    []RunbookVariable   `yaml:"variables,omitempty"`
-	Dashboards   []RunbookDashboard  `yaml:"dashboards,omitempty"`
-	KnownIssues  []RunbookKnownIssue `yaml:"known_issues,omitempty"`
+	Variables   []RunbookVariable   `yaml:"variables,omitempty"`
+	Dashboards  []RunbookDashboard  `yaml:"dashboards,omitempty"`
+	KnownIssues []RunbookKnownIssue `yaml:"known_issues,omitempty"`
 }
 
 // FrontMatter represents the parsed frontmatter structure

@@ -454,12 +454,8 @@ func (v *Validator) validateRunbook(fm *FrontMatter, filePath string, result *Va
 
 // validateRunbookVariables validates the runbook variables section
 func (v *Validator) validateRunbookVariables(runbook *Runbook, filePath string, result *ValidationResult) {
+	// Variables are optional, so only validate if they exist
 	if len(runbook.Variables) == 0 {
-		if !v.shouldSkipCheck(filePath, InvalidRunbookVariables) {
-			result.Checks = append(result.Checks, CheckResult{
-				Check: InvalidRunbookVariables,
-			})
-		}
 		return
 	}
 
@@ -508,12 +504,8 @@ func (v *Validator) validateRunbookVariables(runbook *Runbook, filePath string, 
 
 // validateRunbookDashboards validates the runbook dashboards section
 func (v *Validator) validateRunbookDashboards(runbook *Runbook, filePath string, result *ValidationResult) {
+	// Dashboards are optional, so only validate if they exist
 	if len(runbook.Dashboards) == 0 {
-		if !v.shouldSkipCheck(filePath, InvalidRunbookDashboards) {
-			result.Checks = append(result.Checks, CheckResult{
-				Check: InvalidRunbookDashboards,
-			})
-		}
 		return
 	}
 
@@ -582,12 +574,10 @@ func (v *Validator) validateRunbookDashboardLink(link string, variableNames map[
 
 // validateRunbookKnownIssues validates the runbook known issues section
 func (v *Validator) validateRunbookKnownIssues(runbook *Runbook, filePath string, result *ValidationResult) {
+	// Known issues are optional, so only validate if they exist
+	// The INVALID_RUNBOOK_KNOWN_ISSUES check would be triggered during YAML parsing
+	// if the structure is invalid (e.g., not an array)
 	if len(runbook.KnownIssues) == 0 {
-		if !v.shouldSkipCheck(filePath, InvalidRunbookKnownIssues) {
-			result.Checks = append(result.Checks, CheckResult{
-				Check: InvalidRunbookKnownIssues,
-			})
-		}
 		return
 	}
 

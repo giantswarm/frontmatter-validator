@@ -69,14 +69,14 @@ toc_hide: true
 Runbook checks:
 
 - `RUNBOOK_LAYOUT_NOT_SET`: checks if the `layout: runbook` field is set.
-- `INVALID_RUNBOOK_VARIABLES`: checks if `runbook.variables` is an array and isn't empty.
+- `INVALID_RUNBOOK_VARIABLES`: checks if `runbook.variables` is a valid array structure if present. Note: `variables` is optional.
 - `RUNBOOK_VARIABLE_WITHOUT_NAME`: checks whether each runbook variable has a name specified.
 - `INVALID_RUNBOOK_VARIABLE_NAME`: checks whether a variable name is using only uppercase letters and the underscore. Also the name must be unique within this runbook's variables.
 - `INVALID_RUNBOOK_VARIABLE`: checks whether each variable is a valid object with the field `name` and the optional fields `description` and `default`.
-- `INVALID_RUNBOOK_DASHBOARDS`: checks if `runbook.dashboards` is an array and isn't empty.
+- `INVALID_RUNBOOK_DASHBOARDS`: checks if `runbook.dashboards` is a valid array structure if present. Note: `dashboards` is optional.
 - `INVALID_RUNBOOK_DASHBOARD`: checks whether each runbook dashboard has `name` and `link` specified and non-empty.
 - `INVALID_RUNBOOK_DASHBOARD_LINK`: checks whether the dashboard `link` is a valid URL. This includes checking that the variables used like `$INSTALLATION` are defined in the runbook variables.
-- `INVALID_RUNBOOK_KNOWN_ISSUES`: checks if `runbook.known_issues` is an array and isn't empty.
+- `INVALID_RUNBOOK_KNOWN_ISSUES`: checks if `runbook.known_issues` is a valid array structure if present. Note: `known_issues` is optional.
 - `INVALID_RUNBOOK_KNOWN_ISSUE`: checks whether each known issue has `url` defined. The entry may also have the optional field `description`.
 - `INVALID_RUNBOOK_KNOWN_ISSUE_URL`: checks whether a known issue URL is a valid URL.
 - `RUNBOOK_APPEARS_IN_MENU`: checks whether the `toc_hide: true` field is set.

@@ -302,22 +302,6 @@ func TestValidateFile_InvalidRunbookVariables(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			name: "empty variables array",
-			content: `---
-title: Test Runbook
-layout: runbook
-toc_hide: true
-runbook:
-  variables: []
-  dashboards:
-    - name: Test Dashboard
-      link: https://example.com
-  known_issues:
-    - url: https://github.com/giantswarm/giantswarm/issues/1
----`,
-			expectedErr: InvalidRunbookVariables,
-		},
-		{
 			name: "variable without name",
 			content: `---
 title: Test Runbook
@@ -400,22 +384,6 @@ func TestValidateFile_InvalidRunbookDashboards(t *testing.T) {
 		content     string
 		expectedErr string
 	}{
-		{
-			name: "empty dashboards array",
-			content: `---
-title: Test Runbook
-layout: runbook
-toc_hide: true
-runbook:
-  variables:
-    - name: INSTALLATION
-      description: Installation name
-  dashboards: []
-  known_issues:
-    - url: https://github.com/giantswarm/giantswarm/issues/1
----`,
-			expectedErr: InvalidRunbookDashboards,
-		},
 		{
 			name: "dashboard without name",
 			content: `---
@@ -514,23 +482,6 @@ func TestValidateFile_InvalidRunbookKnownIssues(t *testing.T) {
 		content     string
 		expectedErr string
 	}{
-		{
-			name: "empty known issues array",
-			content: `---
-title: Test Runbook
-layout: runbook
-toc_hide: true
-runbook:
-  variables:
-    - name: INSTALLATION
-      description: Installation name
-  dashboards:
-    - name: Test Dashboard
-      link: https://example.com
-  known_issues: []
----`,
-			expectedErr: InvalidRunbookKnownIssues,
-		},
 		{
 			name: "known issue without URL",
 			content: `---

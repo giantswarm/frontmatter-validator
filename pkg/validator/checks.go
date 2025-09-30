@@ -140,7 +140,7 @@ func GetChecks() []Check {
 		},
 		{
 			ID:          InvalidRunbookVariables,
-			Description: "Runbook variables must be an array and not empty",
+			Description: "Runbook variables must be a valid array if present",
 			Severity:    SeverityFail,
 		},
 		{
@@ -163,7 +163,7 @@ func GetChecks() []Check {
 		},
 		{
 			ID:          InvalidRunbookDashboards,
-			Description: "Runbook dashboards must be an array and not empty",
+			Description: "Runbook dashboards must be a valid array if present",
 			Severity:    SeverityFail,
 		},
 		{
@@ -180,7 +180,7 @@ func GetChecks() []Check {
 		},
 		{
 			ID:          InvalidRunbookKnownIssues,
-			Description: "Runbook known issues must be an array and not empty",
+			Description: "Runbook known issues must be a valid array if present",
 			Severity:    SeverityFail,
 		},
 		{
