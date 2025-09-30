@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add configuration system with YAML-based rule management for directory-specific validation rules
 - Add `--config` flag to specify configuration file location (default: `./frontmatter-validator.yaml`)
 - Add example configuration files for full validation and last-reviewed-only modes
+- Add JSON Schema (`frontmatter-validator.schema.json`) for IDE validation and autocompletion support
 
 ### Removed
 
