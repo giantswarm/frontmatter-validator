@@ -9,3 +9,4 @@ alwaysApply: true
 - Prefer table-style unit tests.
 - Sort imports according to `gofmt`.
 - Use sentence case for documentation headlines.
+- Make sure to maintain the JSON Schema with all changes to checks and configuraiton in the code base.
