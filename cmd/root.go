@@ -16,10 +16,9 @@ import (
 )
 
 var (
-	validationMode string
-	outputFormat   string
-	targetPath     string
-	configPath     string
+	outputFormat string
+	targetPath   string
+	configPath   string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -41,18 +40,12 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.Flags().StringVar(&validationMode, "validation", "all", "Which validation to run. Use 'last-reviewed' or 'all'")
 	rootCmd.Flags().StringVar(&outputFormat, "output", "stdout", "Output format: 'json' or 'stdout'")
 	rootCmd.Flags().StringVar(&targetPath, "path", ".", "Target path to scan for Markdown files")
 	rootCmd.Flags().StringVar(&configPath, "config", "./frontmatter-validator.yaml", "Path to configuration file")
 }
 
 func runValidation(cmd *cobra.Command, args []string) error {
-	// Validate the validation mode flag
-	if err := validateValidationMode(validationMode); err != nil {
-		return err
-	}
-
 	// Load configuration
 	configManager, err := config.NewManager(configPath)
 	if err != nil {
@@ -82,7 +75,7 @@ func runValidation(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		result := v.ValidateFile(string(content), filePath, validationMode)
+		result := v.ValidateFile(string(content), filePath)
 		if len(result.Checks) > 0 {
 			results[filePath] = result
 		}
@@ -157,14 +150,4 @@ func fileExists(filename string) bool {
 		return false
 	}
 	return !info.IsDir()
-}
-
-// validateValidationMode validates the validation mode flag value
-func validateValidationMode(mode string) error {
-	switch mode {
-	case validator.ValidateAll, validator.ValidateLastReviewDate:
-		return nil
-	default:
-		return fmt.Errorf("invalid validation mode '%s'. Valid options are: 'all', 'last-reviewed'", mode)
-	}
 }

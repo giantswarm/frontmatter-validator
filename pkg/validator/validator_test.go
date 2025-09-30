@@ -9,7 +9,7 @@ func TestValidateFile_NoFrontMatter(t *testing.T) {
 	v := New()
 	content := "# Just a markdown file without frontmatter\n"
 
-	result := v.ValidateFile(content, "test.md", ValidateAll)
+	result := v.ValidateFile(content, "test.md")
 
 	if len(result.Checks) != 1 {
 		t.Errorf("Expected 1 check result, got %d", len(result.Checks))
@@ -24,7 +24,7 @@ func TestValidateFile_NoTrailingNewline(t *testing.T) {
 	v := New()
 	content := "---\ntitle: Test\n---\nContent without trailing newline"
 
-	result := v.ValidateFile(content, "test.md", ValidateAll)
+	result := v.ValidateFile(content, "test.md")
 
 	if len(result.Checks) != 1 {
 		t.Errorf("Expected 1 check result, got %d", len(result.Checks))
@@ -54,7 +54,7 @@ weight: 100
 This is a test markdown file with proper frontmatter.
 `
 
-	result := v.ValidateFile(content, "test.md", ValidateAll)
+	result := v.ValidateFile(content, "test.md")
 
 	// Should have no critical errors, maybe just warnings about review date
 	hasFailures := false
@@ -82,7 +82,7 @@ invalid_attribute: should not be allowed
 # Test Content
 `
 
-	result := v.ValidateFile(content, "test.md", ValidateAll)
+	result := v.ValidateFile(content, "test.md")
 
 	hasUnknownAttribute := false
 	for _, check := range result.Checks {
@@ -98,38 +98,6 @@ invalid_attribute: should not be allowed
 		t.Error("Expected UNKNOWN_ATTRIBUTE check for invalid frontmatter attribute")
 	}
 }
-
-func TestValidateFile_LastReviewDateOnly(t *testing.T) {
-	v := New()
-	content := `---
-title: Test
-description: This is a valid description that is long enough and ends with a full stop.
-last_review_date: 2020-01-01
----
-
-# Test Content
-`
-
-	result := v.ValidateFile(content, "test.md", ValidateLastReviewDate)
-
-	// Should only check last review date, not other attributes
-	hasReviewCheck := false
-	for _, check := range result.Checks {
-		if check.Check == ReviewTooLongAgo {
-			hasReviewCheck = true
-		}
-		// Should not have other checks in this mode
-		if check.Check != ReviewTooLongAgo && check.Check != InvalidLastReviewDate && check.Check != NoLastReviewDate {
-			t.Errorf("Unexpected check in last-review-date mode: %s", check.Check)
-		}
-	}
-
-	if !hasReviewCheck {
-		t.Error("Expected review date check in last-review-date validation mode")
-	}
-}
-
-// TestIsIgnoredPath has been removed as ignore paths are now handled by the configuration system
 
 func TestParseFrontMatter(t *testing.T) {
 	v := New()
@@ -185,7 +153,7 @@ owner:
 [EFK Stack v0.5.0](https://docs.giantswarm.io/changes/managed-apps/efk-stack-app/v0.5.0/) is updated to Elasticsearch and Kibana v7.10.2.
 `
 
-	result := v.ValidateFile(content, "test.md", ValidateAll)
+	result := v.ValidateFile(content, "test.md")
 
 	// Should NOT have NO_FRONT_MATTER error
 	hasNoFrontMatter := false
