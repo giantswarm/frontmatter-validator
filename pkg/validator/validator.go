@@ -93,7 +93,7 @@ func NewWithConfig(configManager ConfigManager) *Validator {
 }
 
 // ValidateFile validates the content of a single markdown file
-func (v *Validator) ValidateFile(content, filePath, validationMode string) ValidationResult {
+func (v *Validator) ValidateFile(content, filePath string) ValidationResult {
 	result := ValidationResult{
 		NumFrontMatterLines: 0,
 		Checks:              []CheckResult{},
@@ -124,13 +124,8 @@ func (v *Validator) ValidateFile(content, filePath, validationMode string) Valid
 
 	result.NumFrontMatterLines = numFMLines
 
-	// Run validations based on mode
-	switch validationMode {
-	case ValidateAll:
-		v.validateAll(frontMatter, fmString, filePath, &result)
-	case ValidateLastReviewDate:
-		v.validateLastReviewDate(frontMatter, filePath, &result)
-	}
+	// Run validations
+	v.validateAll(frontMatter, fmString, filePath, &result)
 
 	return result
 }

@@ -51,9 +51,6 @@ go build -o frontmatter-validator .
 # Validate files in a specific directory
 ./frontmatter-validator --path=/path/to/docs
 
-# Only validate last review dates
-./frontmatter-validator --validation=last-reviewed
-
 # Output results as JSON (useful for CI/CD integration)
 ./frontmatter-validator --output=json
 
@@ -66,7 +63,6 @@ echo "src/content/docs/example.md" | ./frontmatter-validator
 
 ### Available flags
 
-- `--validation`: Validation mode (`all` or `last-reviewed`, default: `all`)
 - `--output`: Output format (`stdout` or `json`, default: `stdout`)
 - `--path`: Target path to scan for Markdown files (default: `.`)
 - `--config`: Path to configuration file (default: `./frontmatter-validator.yaml`)

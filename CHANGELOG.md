@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Removed `--validation` flag. This functionality can now be covered by multiple configuration files.
+
 ## [0.2.0] - 2025-09-30
 
 ### Added
