@@ -130,36 +130,5 @@
         "User question doesn't end with question mark"
       ]
     }
-  },
-  "examples": [
-    {
-      "default_rules": {
-        "enabled_checks": [
-          "NO_FRONT_MATTER",
-          "NO_TRAILING_NEWLINE",
-          "UNKNOWN_ATTRIBUTE",
-          "NO_TITLE",
-          "NO_DESCRIPTION",
-          "NO_OWNER",
-          "NO_LAST_REVIEW_DATE"
-        ]
-      },
-      "directory_overrides": [
-        {
-          "path": "src/content/vintage/**",
-          "disabled_checks": [
-            "NO_LAST_REVIEW_DATE",
-            "REVIEW_TOO_LONG_AGO"
-          ]
-        },
-        {
-          "path": "src/content/changes/**",
-          "disabled_checks": [
-            "NO_DESCRIPTION",
-            "NO_USER_QUESTIONS"
-          ]
-        }
-      ]
-    }
-  ]
+  }
 }
