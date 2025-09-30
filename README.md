@@ -25,57 +25,9 @@ Frontmatter is metadata enclosed in Markdown files, like page title, description
   - Apply all validators that are configured for the given path. By default, all validators should be applied.
   - Yield warnings and errors as annotations and log lines.
 
-## Validators
+## Checks
 
-Validator names are given as the short form of the "complaint" they issue, so they are all meant in a negative way. Sorry 'bout that! `;-)`
-
-These validator IDs can be used in configuration files to enable or disable specific checks for different directories.
-
-### General
-
-- `NO_FRONTMATTER`: there is no frontmatter at all.
-- `UNKNOWN_ATTRIBUTE`: the frontmatter contains an attribute that is not in the list of valid keys.
-- `NO_TRAILING_NEWLINE`: the file does not end with a newline character, which is required for proper parsing.
-
-### Title
-
-- `NO_TITLE`: the `title` field is missing or empty.
-- `LONG_TITLE`: the `title` is longer than 100 characters.
-- `SHORT_TITLE`: the `title` is shorter than 5 characters.
-
-### Description
-
-- `INVALID_DESCRIPTION`: the `description` is not a string or contains line breaks.
-- `LONG_DESCRIPTION`: the `description` is longer than 300 characters.
-- `NO_FULL_STOP_DESCRIPTION`: the `description` does not end with a full stop.
-- `NO_DESCRIPTION`: the `description` field is missing.
-- `SHORT_DESCRIPTION`: the `description` is shorter than 50 characters.
-
-### Owner
-
-- `INVALID_OWNER`: the `owner` is not an array of valid GitHub team URLs starting with `https://github.com/orgs/giantswarm/teams/`.
-- `NO_OWNER`: the `owner` field is missing or empty.
-
-### Last review date
-
-- `INVALID_LAST_REVIEW_DATE`: the `last_review_date` is not a valid date in the form `YYYY-MM-DD` or is set to a future date.
-- `NO_LAST_REVIEW_DATE`: the `last_review_date` field is missing.
-- `REVIEW_TOO_LONG_AGO`: the `last_review_date` is older than the expiration period (default 365 days, configurable via `expiration_in_days`).
-
-### Link title
-
-- `LONG_LINK_TITLE`: the `linkTitle` (or `title` if `linkTitle` is not provided) is longer than 40 characters.
-- `NO_LINK_TITLE`: the `linkTitle` field is missing when the page has a menu configuration.
-
-### Weight
-
-- `NO_WEIGHT`: the `weight` field is missing when the page has a menu configuration.
-
-### User questions
-
-- `NO_USER_QUESTIONS`: the `user_questions` field is missing (except for `_index.md` files).
-- `LONG_USER_QUESTION`: any user question is longer than 100 characters.
-- `NO_QUESTION_MARK`: a user question does not end with a question mark.
+See [documentation / Checks](docs/checks.md) for information on the checks that can be performed.
 
 ## Installation and usage
 
