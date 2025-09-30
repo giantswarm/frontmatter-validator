@@ -93,7 +93,7 @@ go build -o frontmatter-validator .
 ### Command line usage
 
 ```bash
-# Validate all markdown files in src/content directory (default)
+# Validate all markdown files in current directory (default)
 ./frontmatter-validator
 
 # Validate files in a specific directory
@@ -116,7 +116,7 @@ echo "src/content/docs/example.md" | ./frontmatter-validator
 
 - `--validation`: Validation mode (`all` or `last-reviewed`, default: `all`)
 - `--output`: Output format (`stdout` or `json`, default: `stdout`)
-- `--path`: Target path to scan for Markdown files (default: `src/content`)
+- `--path`: Target path to scan for Markdown files (default: `.`)
 - `--config`: Path to configuration file (default: `./frontmatter-validator.yaml`)
 
 ## Configuration
