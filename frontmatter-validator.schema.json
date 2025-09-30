@@ -7,10 +7,12 @@
   "properties": {
     "default_rules": {
       "type": "object",
+      "title": "Default Rules",
       "description": "Default validation rules applied to all files unless overridden",
       "properties": {
         "enabled_checks": {
           "type": "array",
+          "title": "Enabled Checks",
           "description": "List of validation checks that are enabled by default",
           "items": {
             "$ref": "#/$defs/checkId"
@@ -19,6 +21,7 @@
         },
         "disabled_checks": {
           "type": "array",
+          "title": "Disabled Checks",
           "description": "List of validation checks that are disabled by default",
           "items": {
             "$ref": "#/$defs/checkId"
@@ -30,12 +33,15 @@
     },
     "directory_overrides": {
       "type": "array",
+      "title": "Directory Overrides",
       "description": "Directory-specific rule overrides that take precedence over default rules",
       "items": {
         "type": "object",
+        "title": "Directory Override",
         "properties": {
           "path": {
             "type": "string",
+            "title": "Path Pattern",
             "description": "Glob pattern matching file paths (e.g., 'src/content/vintage/**')",
             "examples": [
               "src/content/vintage/**",
@@ -46,6 +52,7 @@
           },
           "enabled_checks": {
             "type": "array",
+            "title": "Enabled Checks",
             "description": "Additional validation checks to enable for this path pattern",
             "items": {
               "$ref": "#/$defs/checkId"
@@ -54,6 +61,7 @@
           },
           "disabled_checks": {
             "type": "array",
+            "title": "Disabled Checks",
             "description": "Validation checks to disable for this path pattern",
             "items": {
               "$ref": "#/$defs/checkId"
@@ -71,6 +79,7 @@
   "$defs": {
     "checkId": {
       "type": "string",
+      "title": "Check ID",
       "description": "Validation check identifier",
       "enum": [
         "NO_FRONT_MATTER",
