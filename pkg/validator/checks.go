@@ -132,6 +132,74 @@ func GetChecks() []Check {
 			Severity:    SeverityFail,
 			HasValue:    true,
 		},
+		// Runbook checks
+		{
+			ID:          RunbookLayoutNotSet,
+			Description: "Runbook pages must have layout: runbook",
+			Severity:    SeverityFail,
+		},
+		{
+			ID:          InvalidRunbookVariables,
+			Description: "Runbook variables must be an array and not empty",
+			Severity:    SeverityFail,
+		},
+		{
+			ID:          RunbookVariableWithoutName,
+			Description: "Each runbook variable must have a name specified",
+			Severity:    SeverityFail,
+			HasValue:    true,
+		},
+		{
+			ID:          InvalidRunbookVariableName,
+			Description: "Variable names must use only uppercase letters and underscores, and be unique",
+			Severity:    SeverityFail,
+			HasValue:    true,
+		},
+		{
+			ID:          InvalidRunbookVariable,
+			Description: "Each variable must be a valid object with name field and optional description and default fields",
+			Severity:    SeverityFail,
+			HasValue:    true,
+		},
+		{
+			ID:          InvalidRunbookDashboards,
+			Description: "Runbook dashboards must be an array and not empty",
+			Severity:    SeverityFail,
+		},
+		{
+			ID:          InvalidRunbookDashboard,
+			Description: "Each runbook dashboard must have name and link specified and non-empty",
+			Severity:    SeverityFail,
+			HasValue:    true,
+		},
+		{
+			ID:          InvalidRunbookDashboardLink,
+			Description: "Dashboard link must be a valid URL with properly defined variables",
+			Severity:    SeverityFail,
+			HasValue:    true,
+		},
+		{
+			ID:          InvalidRunbookKnownIssues,
+			Description: "Runbook known issues must be an array and not empty",
+			Severity:    SeverityFail,
+		},
+		{
+			ID:          InvalidRunbookKnownIssue,
+			Description: "Each known issue must have url defined and may have optional description field",
+			Severity:    SeverityFail,
+			HasValue:    true,
+		},
+		{
+			ID:          InvalidRunbookKnownIssueURL,
+			Description: "Known issue URL must be a valid URL",
+			Severity:    SeverityFail,
+			HasValue:    true,
+		},
+		{
+			ID:          RunbookAppearsInMenu,
+			Description: "Runbook pages must have toc_hide: true to prevent appearing in menus",
+			Severity:    SeverityFail,
+		},
 	}
 }
 

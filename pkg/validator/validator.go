@@ -80,6 +80,19 @@ func (dcm *defaultConfigManager) GetEnabledChecksForPath(filePath string) []stri
 		"NO_USER_QUESTIONS",
 		"LONG_USER_QUESTION",
 		"NO_QUESTION_MARK",
+		// Runbook checks
+		"RUNBOOK_LAYOUT_NOT_SET",
+		"INVALID_RUNBOOK_VARIABLES",
+		"RUNBOOK_VARIABLE_WITHOUT_NAME",
+		"INVALID_RUNBOOK_VARIABLE_NAME",
+		"INVALID_RUNBOOK_VARIABLE",
+		"INVALID_RUNBOOK_DASHBOARDS",
+		"INVALID_RUNBOOK_DASHBOARD",
+		"INVALID_RUNBOOK_DASHBOARD_LINK",
+		"INVALID_RUNBOOK_KNOWN_ISSUES",
+		"INVALID_RUNBOOK_KNOWN_ISSUE",
+		"INVALID_RUNBOOK_KNOWN_ISSUE_URL",
+		"RUNBOOK_APPEARS_IN_MENU",
 	}
 }
 
@@ -180,6 +193,9 @@ func (v *Validator) validateAll(fm *FrontMatter, fmString, filePath string, resu
 
 	// Validate last review date
 	v.validateLastReviewDate(fm, filePath, result)
+
+	// Validate runbook
+	v.validateRunbook(fm, filePath, result)
 }
 
 // validateUnknownAttributes checks for unknown frontmatter attributes
@@ -401,4 +417,200 @@ func (v *Validator) shouldSkipCheck(filePath, checkID string) bool {
 
 	// If no config manager, don't skip any checks (fallback behavior)
 	return false
+}
+
+// validateRunbook validates runbook-specific fields
+func (v *Validator) validateRunbook(fm *FrontMatter, filePath string, result *ValidationResult) {
+	// Check if this is a runbook page
+	if fm.Layout == "runbook" {
+		// Validate that runbook pages have toc_hide: true
+		if !fm.TocHide {
+			if !v.shouldSkipCheck(filePath, RunbookAppearsInMenu) {
+				result.Checks = append(result.Checks, CheckResult{
+					Check: RunbookAppearsInMenu,
+				})
+			}
+		}
+
+		// Validate runbook configuration
+		if fm.Runbook == nil {
+			// If layout is runbook but no runbook config, that's an issue
+			// We'll let the individual field validations catch the specifics
+			return
+		}
+
+		v.validateRunbookVariables(fm.Runbook, filePath, result)
+		v.validateRunbookDashboards(fm.Runbook, filePath, result)
+		v.validateRunbookKnownIssues(fm.Runbook, filePath, result)
+	} else if fm.Runbook != nil {
+		// If runbook config exists but layout is not runbook
+		if !v.shouldSkipCheck(filePath, RunbookLayoutNotSet) {
+			result.Checks = append(result.Checks, CheckResult{
+				Check: RunbookLayoutNotSet,
+			})
+		}
+	}
+}
+
+// validateRunbookVariables validates the runbook variables section
+func (v *Validator) validateRunbookVariables(runbook *Runbook, filePath string, result *ValidationResult) {
+	if len(runbook.Variables) == 0 {
+		if !v.shouldSkipCheck(filePath, InvalidRunbookVariables) {
+			result.Checks = append(result.Checks, CheckResult{
+				Check: InvalidRunbookVariables,
+			})
+		}
+		return
+	}
+
+	// Track variable names for uniqueness check
+	variableNames := make(map[string]bool)
+	variableNameRegex := regexp.MustCompile(`^[A-Z_]+$`)
+
+	for i, variable := range runbook.Variables {
+		// Check if variable has a name
+		if variable.Name == "" {
+			if !v.shouldSkipCheck(filePath, RunbookVariableWithoutName) {
+				result.Checks = append(result.Checks, CheckResult{
+					Check: RunbookVariableWithoutName,
+					Value: fmt.Sprintf("Variable at index %d", i),
+				})
+			}
+			continue
+		}
+
+		// Check variable name format (uppercase letters and underscores only)
+		if !variableNameRegex.MatchString(variable.Name) {
+			if !v.shouldSkipCheck(filePath, InvalidRunbookVariableName) {
+				result.Checks = append(result.Checks, CheckResult{
+					Check: InvalidRunbookVariableName,
+					Value: variable.Name,
+				})
+			}
+		}
+
+		// Check variable name uniqueness
+		if variableNames[variable.Name] {
+			if !v.shouldSkipCheck(filePath, InvalidRunbookVariableName) {
+				result.Checks = append(result.Checks, CheckResult{
+					Check: InvalidRunbookVariableName,
+					Value: fmt.Sprintf("Duplicate variable name: %s", variable.Name),
+				})
+			}
+		}
+		variableNames[variable.Name] = true
+
+		// Validate variable structure (name is required, description and default are optional)
+		// This is mostly structural validation - the YAML parsing handles most of this
+		// but we can add additional checks if needed
+	}
+}
+
+// validateRunbookDashboards validates the runbook dashboards section
+func (v *Validator) validateRunbookDashboards(runbook *Runbook, filePath string, result *ValidationResult) {
+	if len(runbook.Dashboards) == 0 {
+		if !v.shouldSkipCheck(filePath, InvalidRunbookDashboards) {
+			result.Checks = append(result.Checks, CheckResult{
+				Check: InvalidRunbookDashboards,
+			})
+		}
+		return
+	}
+
+	// Get variable names for link validation
+	variableNames := make(map[string]bool)
+	for _, variable := range runbook.Variables {
+		if variable.Name != "" {
+			variableNames[variable.Name] = true
+		}
+	}
+
+	for i, dashboard := range runbook.Dashboards {
+		// Check if dashboard has name and link
+		if dashboard.Name == "" || dashboard.Link == "" {
+			if !v.shouldSkipCheck(filePath, InvalidRunbookDashboard) {
+				result.Checks = append(result.Checks, CheckResult{
+					Check: InvalidRunbookDashboard,
+					Value: fmt.Sprintf("Dashboard at index %d missing name or link", i),
+				})
+			}
+			continue
+		}
+
+		// Validate dashboard link
+		v.validateRunbookDashboardLink(dashboard.Link, variableNames, filePath, result)
+	}
+}
+
+// validateRunbookDashboardLink validates a dashboard link URL and variable usage
+func (v *Validator) validateRunbookDashboardLink(link string, variableNames map[string]bool, filePath string, result *ValidationResult) {
+	// Find all variables in the link (format: $VARIABLE_NAME)
+	variableRegex := regexp.MustCompile(`\$([A-Z_]+)`)
+	matches := variableRegex.FindAllStringSubmatch(link, -1)
+
+	// Check if all variables used in the link are defined
+	for _, match := range matches {
+		if len(match) > 1 {
+			variableName := match[1]
+			if !variableNames[variableName] {
+				if !v.shouldSkipCheck(filePath, InvalidRunbookDashboardLink) {
+					result.Checks = append(result.Checks, CheckResult{
+						Check: InvalidRunbookDashboardLink,
+						Value: fmt.Sprintf("Undefined variable $%s in link: %s", variableName, link),
+					})
+				}
+			}
+		}
+	}
+
+	// Replace variables with dummy values for URL validation
+	testLink := link
+	for variableName := range variableNames {
+		testLink = strings.ReplaceAll(testLink, "$"+variableName, "test")
+	}
+
+	// Basic URL validation
+	if !strings.HasPrefix(testLink, "http://") && !strings.HasPrefix(testLink, "https://") {
+		if !v.shouldSkipCheck(filePath, InvalidRunbookDashboardLink) {
+			result.Checks = append(result.Checks, CheckResult{
+				Check: InvalidRunbookDashboardLink,
+				Value: fmt.Sprintf("Invalid URL format: %s", link),
+			})
+		}
+	}
+}
+
+// validateRunbookKnownIssues validates the runbook known issues section
+func (v *Validator) validateRunbookKnownIssues(runbook *Runbook, filePath string, result *ValidationResult) {
+	if len(runbook.KnownIssues) == 0 {
+		if !v.shouldSkipCheck(filePath, InvalidRunbookKnownIssues) {
+			result.Checks = append(result.Checks, CheckResult{
+				Check: InvalidRunbookKnownIssues,
+			})
+		}
+		return
+	}
+
+	for i, issue := range runbook.KnownIssues {
+		// Check if known issue has URL
+		if issue.URL == "" {
+			if !v.shouldSkipCheck(filePath, InvalidRunbookKnownIssue) {
+				result.Checks = append(result.Checks, CheckResult{
+					Check: InvalidRunbookKnownIssue,
+					Value: fmt.Sprintf("Known issue at index %d missing URL", i),
+				})
+			}
+			continue
+		}
+
+		// Validate URL format
+		if !strings.HasPrefix(issue.URL, "http://") && !strings.HasPrefix(issue.URL, "https://") {
+			if !v.shouldSkipCheck(filePath, InvalidRunbookKnownIssueURL) {
+				result.Checks = append(result.Checks, CheckResult{
+					Check: InvalidRunbookKnownIssueURL,
+					Value: issue.URL,
+				})
+			}
+		}
+	}
 }

@@ -34,6 +34,19 @@ const (
 	ShortDescription      = "SHORT_DESCRIPTION"
 	ShortTitle            = "SHORT_TITLE"
 	UnknownAttribute      = "UNKNOWN_ATTRIBUTE"
+	// Runbook checks
+	RunbookLayoutNotSet           = "RUNBOOK_LAYOUT_NOT_SET"
+	InvalidRunbookVariables       = "INVALID_RUNBOOK_VARIABLES"
+	RunbookVariableWithoutName    = "RUNBOOK_VARIABLE_WITHOUT_NAME"
+	InvalidRunbookVariableName    = "INVALID_RUNBOOK_VARIABLE_NAME"
+	InvalidRunbookVariable        = "INVALID_RUNBOOK_VARIABLE"
+	InvalidRunbookDashboards      = "INVALID_RUNBOOK_DASHBOARDS"
+	InvalidRunbookDashboard       = "INVALID_RUNBOOK_DASHBOARD"
+	InvalidRunbookDashboardLink   = "INVALID_RUNBOOK_DASHBOARD_LINK"
+	InvalidRunbookKnownIssues     = "INVALID_RUNBOOK_KNOWN_ISSUES"
+	InvalidRunbookKnownIssue      = "INVALID_RUNBOOK_KNOWN_ISSUE"
+	InvalidRunbookKnownIssueURL   = "INVALID_RUNBOOK_KNOWN_ISSUE_URL"
+	RunbookAppearsInMenu          = "RUNBOOK_APPEARS_IN_MENU"
 )
 
 // Severity levels
@@ -66,6 +79,32 @@ type ValidationResult struct {
 	Checks              []CheckResult `json:"checks"`
 }
 
+// RunbookVariable represents a runbook variable
+type RunbookVariable struct {
+	Name        string `yaml:"name"`
+	Description string `yaml:"description,omitempty"`
+	Default     string `yaml:"default,omitempty"`
+}
+
+// RunbookDashboard represents a runbook dashboard
+type RunbookDashboard struct {
+	Name string `yaml:"name"`
+	Link string `yaml:"link"`
+}
+
+// RunbookKnownIssue represents a runbook known issue
+type RunbookKnownIssue struct {
+	URL         string `yaml:"url"`
+	Description string `yaml:"description,omitempty"`
+}
+
+// Runbook represents the runbook configuration
+type Runbook struct {
+	Variables    []RunbookVariable   `yaml:"variables,omitempty"`
+	Dashboards   []RunbookDashboard  `yaml:"dashboards,omitempty"`
+	KnownIssues  []RunbookKnownIssue `yaml:"known_issues,omitempty"`
+}
+
 // FrontMatter represents the parsed frontmatter structure
 type FrontMatter struct {
 	Title               string      `yaml:"title"`
@@ -88,6 +127,8 @@ type FrontMatter struct {
 	SourceRepository    string      `yaml:"source_repository"`
 	SourceRepositoryRef string      `yaml:"source_repository_ref"`
 	TechnicalName       string      `yaml:"technical_name"`
+	TocHide             bool        `yaml:"toc_hide"`
+	Runbook             *Runbook    `yaml:"runbook,omitempty"`
 }
 
 // JSONOutput represents the JSON output format for issues

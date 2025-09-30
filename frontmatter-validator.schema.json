@@ -103,7 +103,19 @@
         "INVALID_LAST_REVIEW_DATE",
         "NO_USER_QUESTIONS",
         "LONG_USER_QUESTION",
-        "NO_QUESTION_MARK"
+        "NO_QUESTION_MARK",
+        "RUNBOOK_LAYOUT_NOT_SET",
+        "INVALID_RUNBOOK_VARIABLES",
+        "RUNBOOK_VARIABLE_WITHOUT_NAME",
+        "INVALID_RUNBOOK_VARIABLE_NAME",
+        "INVALID_RUNBOOK_VARIABLE",
+        "INVALID_RUNBOOK_DASHBOARDS",
+        "INVALID_RUNBOOK_DASHBOARD",
+        "INVALID_RUNBOOK_DASHBOARD_LINK",
+        "INVALID_RUNBOOK_KNOWN_ISSUES",
+        "INVALID_RUNBOOK_KNOWN_ISSUE",
+        "INVALID_RUNBOOK_KNOWN_ISSUE_URL",
+        "RUNBOOK_APPEARS_IN_MENU"
       ],
       "enumDescriptions": [
         "Missing frontmatter block",
@@ -127,7 +139,19 @@
         "Invalid date format or future date",
         "Missing user_questions field",
         "User question longer than 100 characters",
-        "User question doesn't end with question mark"
+        "User question doesn't end with question mark",
+        "Runbook pages must have layout: runbook",
+        "Runbook variables must be an array and not empty",
+        "Each runbook variable must have a name specified",
+        "Variable names must use only uppercase letters and underscores, and be unique",
+        "Each variable must be a valid object with name field and optional description and default fields",
+        "Runbook dashboards must be an array and not empty",
+        "Each runbook dashboard must have name and link specified and non-empty",
+        "Dashboard link must be a valid URL with properly defined variables",
+        "Runbook known issues must be an array and not empty",
+        "Each known issue must have url defined and may have optional description field",
+        "Known issue URL must be a valid URL",
+        "Runbook pages must have toc_hide: true to prevent appearing in menus"
       ]
     }
   }
