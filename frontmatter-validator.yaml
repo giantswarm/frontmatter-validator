@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./frontmatter-validator.schema.json
 # Frontmatter Validator example configuration
 # This file defines which validation checks are enabled and how they apply to different directories.
 

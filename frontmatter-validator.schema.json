@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/giantswarm/frontmatter-validator/main/frontmatter-validator.schema.json",
+  "title": "Frontmatter Validator Configuration",
+  "description": "Configuration schema for the Giant Swarm frontmatter validator",
+  "type": "object",
+  "properties": {
+    "default_rules": {
+      "type": "object",
+      "description": "Default validation rules applied to all files unless overridden",
+      "properties": {
+        "enabled_checks": {
+          "type": "array",
+          "description": "List of validation checks that are enabled by default",
+          "items": {
+            "$ref": "#/$defs/checkId"
+          },
+          "uniqueItems": true
+        },
+        "disabled_checks": {
+          "type": "array",
+          "description": "List of validation checks that are disabled by default",
+          "items": {
+            "$ref": "#/$defs/checkId"
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "directory_overrides": {
+      "type": "array",
+      "description": "Directory-specific rule overrides that take precedence over default rules",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Glob pattern matching file paths (e.g., 'src/content/vintage/**')",
+            "examples": [
+              "src/content/vintage/**",
+              "src/content/changes/*",
+              "**/_index.md",
+              "docs/specific-file.md"
+            ]
+          },
+          "enabled_checks": {
+            "type": "array",
+            "description": "Additional validation checks to enable for this path pattern",
+            "items": {
+              "$ref": "#/$defs/checkId"
+            },
+            "uniqueItems": true
+          },
+          "disabled_checks": {
+            "type": "array",
+            "description": "Validation checks to disable for this path pattern",
+            "items": {
+              "$ref": "#/$defs/checkId"
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": ["path"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["default_rules"],
+  "additionalProperties": false,
+  "$defs": {
+    "checkId": {
+      "type": "string",
+      "description": "Validation check identifier",
+      "enum": [
+        "NO_FRONT_MATTER",
+        "NO_TRAILING_NEWLINE",
+        "UNKNOWN_ATTRIBUTE",
+        "NO_TITLE",
+        "LONG_TITLE",
+        "SHORT_TITLE",
+        "NO_DESCRIPTION",
+        "LONG_DESCRIPTION",
+        "SHORT_DESCRIPTION",
+        "NO_FULL_STOP_DESCRIPTION",
+        "INVALID_DESCRIPTION",
+        "NO_LINK_TITLE",
+        "LONG_LINK_TITLE",
+        "NO_WEIGHT",
+        "NO_OWNER",
+        "INVALID_OWNER",
+        "NO_LAST_REVIEW_DATE",
+        "REVIEW_TOO_LONG_AGO",
+        "INVALID_LAST_REVIEW_DATE",
+        "NO_USER_QUESTIONS",
+        "LONG_USER_QUESTION",
+        "NO_QUESTION_MARK"
+      ],
+      "enumDescriptions": [
+        "Missing frontmatter block",
+        "File doesn't end with newline",
+        "Unknown frontmatter attribute",
+        "Missing title field",
+        "Title longer than 100 characters",
+        "Title shorter than 5 characters",
+        "Missing description field",
+        "Description longer than 300 characters",
+        "Description shorter than 50 characters",
+        "Description doesn't end with period",
+        "Description contains line breaks",
+        "Missing linkTitle for menu pages",
+        "Link title longer than 40 characters",
+        "Missing weight for menu pages",
+        "Missing owner field",
+        "Owner doesn't start with GitHub team URL",
+        "Missing last_review_date field",
+        "Review date is too old",
+        "Invalid date format or future date",
+        "Missing user_questions field",
+        "User question longer than 100 characters",
+        "User question doesn't end with question mark"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "default_rules": {
+        "enabled_checks": [
+          "NO_FRONT_MATTER",
+          "NO_TRAILING_NEWLINE",
+          "UNKNOWN_ATTRIBUTE",
+          "NO_TITLE",
+          "NO_DESCRIPTION",
+          "NO_OWNER",
+          "NO_LAST_REVIEW_DATE"
+        ]
+      },
+      "directory_overrides": [
+        {
+          "path": "src/content/vintage/**",
+          "disabled_checks": [
+            "NO_LAST_REVIEW_DATE",
+            "REVIEW_TOO_LONG_AGO"
+          ]
+        },
+        {
+          "path": "src/content/changes/**",
+          "disabled_checks": [
+            "NO_DESCRIPTION",
+            "NO_USER_QUESTIONS"
+          ]
+        }
+      ]
+    }
+  ]
+}

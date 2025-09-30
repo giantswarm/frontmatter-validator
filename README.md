@@ -88,7 +88,7 @@ By default, the validator looks for `./frontmatter-validator.yaml` in the curren
 
 ### Configuration file format
 
-The configuration file uses YAML format with two main sections:
+The configuration file uses YAML format with two main sections. A JSON Schema is provided at `frontmatter-validator.schema.json` for IDE validation and autocompletion support.
 
 ```yaml
 # Default rules applied to all files
@@ -182,7 +182,6 @@ The `--validation` flag is now deprecated in favor of configuration files:
 
 - Instead of `--validation=all`, use the default configuration or `--config=./frontmatter-validator.yaml`
 - Instead of `--validation=last-reviewed`, use `--config=./frontmatter-validator-last-reviewed.yaml`
-
 
 ### GitHub Actions integration
 
