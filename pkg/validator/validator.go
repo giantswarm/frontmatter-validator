@@ -13,24 +13,82 @@ import (
 type Validator struct {
 	checks        []Check
 	validKeys     map[string]bool
-	excludeConfig *ExcludeConfig
+	configManager ConfigManager
 }
 
-// New creates a new Validator instance
+// ConfigManager interface for configuration management
+type ConfigManager interface {
+	GetEnabledChecksForPath(filePath string) []string
+}
+
+// New creates a new Validator instance with default configuration
 func New() *Validator {
+	// Create a default config manager for backward compatibility
+	configManager, _ := createDefaultConfigManager()
 	return &Validator{
 		checks:        GetChecks(),
 		validKeys:     GetValidKeys(),
-		excludeConfig: nil,
+		configManager: configManager,
 	}
 }
 
-// NewWithExcludes creates a new Validator instance with exclude patterns
+// NewWithExcludes creates a new Validator instance with default configuration
+// Deprecated: Use NewWithConfig instead. Exclude patterns should be handled via configuration files.
 func NewWithExcludes(excludePatterns []string) *Validator {
+	// Create a default config manager for backward compatibility
+	configManager, _ := createDefaultConfigManager()
 	return &Validator{
 		checks:        GetChecks(),
 		validKeys:     GetValidKeys(),
-		excludeConfig: NewExcludeConfig(excludePatterns),
+		configManager: configManager,
+	}
+}
+
+// createDefaultConfigManager creates a config manager with default configuration
+func createDefaultConfigManager() (ConfigManager, error) {
+	// Import the config package to avoid circular imports
+	// We'll create a simple implementation here
+	return &defaultConfigManager{}, nil
+}
+
+// defaultConfigManager provides default configuration when no config file is used
+type defaultConfigManager struct{}
+
+func (dcm *defaultConfigManager) GetEnabledChecksForPath(filePath string) []string {
+	// Return all checks enabled by default - this matches the old behavior
+	// where all checks were enabled unless specifically ignored
+	return []string{
+		"NO_FRONT_MATTER",
+		"NO_TRAILING_NEWLINE",
+		"UNKNOWN_ATTRIBUTE",
+		"NO_TITLE",
+		"LONG_TITLE",
+		"SHORT_TITLE",
+		"NO_DESCRIPTION",
+		"LONG_DESCRIPTION",
+		"SHORT_DESCRIPTION",
+		"NO_FULL_STOP_DESCRIPTION",
+		"INVALID_DESCRIPTION",
+		"NO_LINK_TITLE",
+		"LONG_LINK_TITLE",
+		"NO_WEIGHT",
+		"NO_OWNER",
+		"INVALID_OWNER",
+		"NO_LAST_REVIEW_DATE",
+		"REVIEW_TOO_LONG_AGO",
+		"INVALID_LAST_REVIEW_DATE",
+		"NO_USER_QUESTIONS",
+		"LONG_USER_QUESTION",
+		"NO_QUESTION_MARK",
+	}
+}
+
+// NewWithConfig creates a new Validator instance with a configuration manager
+func NewWithConfig(configManager ConfigManager) *Validator {
+	return &Validator{
+		checks:        GetChecks(),
+		validKeys:     GetValidKeys(),
+		configManager: configManager,
 	}
 }
 
@@ -67,9 +125,10 @@ func (v *Validator) ValidateFile(content, filePath, validationMode string) Valid
 	result.NumFrontMatterLines = numFMLines
 
 	// Run validations based on mode
-	if validationMode == ValidateAll {
+	switch validationMode {
+	case ValidateAll:
 		v.validateAll(frontMatter, fmString, filePath, &result)
-	} else if validationMode == ValidateLastReviewDate {
+	case ValidateLastReviewDate:
 		v.validateLastReviewDate(frontMatter, filePath, &result)
 	}
 
@@ -330,33 +389,21 @@ func (v *Validator) validateLastReviewDate(fm *FrontMatter, filePath string, res
 	}
 }
 
-// isIgnoredPath checks if a file path should be ignored for a specific check
-func (v *Validator) isIgnoredPath(filePath, checkID string) bool {
-	check := GetCheckByID(checkID)
-	if check == nil {
-		return false
-	}
-
-	for _, ignorePath := range check.IgnorePaths {
-		if strings.HasPrefix(filePath, ignorePath) {
-			return true
-		}
-	}
-
-	return false
-}
-
-// shouldSkipCheck checks if a check should be skipped due to exclusion patterns
+// shouldSkipCheck checks if a check should be skipped based on configuration
 func (v *Validator) shouldSkipCheck(filePath, checkID string) bool {
-	// Check built-in ignore paths
-	if v.isIgnoredPath(filePath, checkID) {
-		return true
+	// Use config manager to determine enabled checks
+	if v.configManager != nil {
+		enabledChecks := v.configManager.GetEnabledChecksForPath(filePath)
+
+		// If check is not in enabled list, skip it
+		for _, enabledCheck := range enabledChecks {
+			if enabledCheck == checkID {
+				return false // Check is enabled
+			}
+		}
+		return true // Check not found in enabled list, skip it
 	}
 
-	// Check user-defined exclusion patterns
-	if v.excludeConfig != nil && v.excludeConfig.ShouldExclude(filePath, checkID) {
-		return true
-	}
-
+	// If no config manager, don't skip any checks (fallback behavior)
 	return false
 }

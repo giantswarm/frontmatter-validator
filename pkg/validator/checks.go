@@ -1,15 +1,8 @@
 package validator
 
-// Path configurations
+// DocsHost is the base URL for documentation links
 const (
-	PathContent     = "src/content"
-	PathVintage     = "src/content/vintage"
-	PathChanges     = "src/content/changes"
-	PathCRDs        = "src/content/reference/platform-api/crd"
-	PathVintageCRDs = "src/content/vintage/use-the-api/management-api/crd"
-	PathClusterApps = "src/content/reference/platform-api/cluster-apps"
-	PathMeta        = "src/content/meta"
-	DocsHost        = "https://github.com/giantswarm/docs/blob/main/"
+	DocsHost = "https://github.com/giantswarm/docs/blob/main/"
 )
 
 // GetChecks returns all validation checks in logical order
@@ -53,47 +46,40 @@ func GetChecks() []Check {
 		{
 			ID:          NoDescription,
 			Description: "Each page should have a description",
-			IgnorePaths: []string{PathCRDs, PathVintageCRDs, PathChanges},
 			Severity:    SeverityFail,
 		},
 		{
 			ID:          LongDescription,
 			Description: "The description should be less than 300 characters",
-			IgnorePaths: []string{PathCRDs, PathVintageCRDs},
 			Severity:    SeverityFail,
 			HasValue:    true,
 		},
 		{
 			ID:          NoFullStopDescription,
 			Description: "The description should end with a full stop",
-			IgnorePaths: []string{PathCRDs, PathVintageCRDs, PathChanges},
 			Severity:    SeverityFail,
 			HasValue:    true,
 		},
 		{
 			ID:          ShortDescription,
 			Description: "The description should be longer than 50 characters",
-			IgnorePaths: []string{PathCRDs, PathVintageCRDs, PathChanges},
 			Severity:    SeverityFail,
 			HasValue:    true,
 		},
 		{
 			ID:          InvalidDescription,
 			Description: "Description must be a simple string without any markup or line breaks",
-			IgnorePaths: []string{PathCRDs, PathVintageCRDs},
 			Severity:    SeverityFail,
 		},
 		{
 			ID:          NoLinkTitle,
 			Description: "The page should have a linkTitle, which appears in menus and list pages. If not given, title will be used and should be no longer than 40 characters.",
-			IgnorePaths: []string{PathCRDs, PathVintageCRDs, PathChanges},
 			Severity:    SeverityWarn,
 		},
 		{
 			ID:          LongLinkTitle,
 			Description: "The linkTitle (used in menu and list pages; title is used if linkTitle is not given) should be less than 40 characters",
 			Severity:    SeverityFail,
-			IgnorePaths: []string{PathChanges},
 		},
 		{
 			ID:          NoWeight,
@@ -104,7 +90,6 @@ func GetChecks() []Check {
 		{
 			ID:          NoOwner,
 			Description: "The page should have an owner assigned",
-			IgnorePaths: []string{PathCRDs, PathVintageCRDs, PathChanges},
 			Severity:    SeverityFail,
 		},
 		{
@@ -116,14 +101,12 @@ func GetChecks() []Check {
 		{
 			ID:          NoLastReviewDate,
 			Description: "The page should have a last_review_date",
-			IgnorePaths: []string{PathCRDs, PathVintage, PathChanges, PathClusterApps, PathMeta},
 			Severity:    SeverityWarn,
 		},
 		{
 			ID:          ReviewTooLongAgo,
 			Description: "The last review date is too long ago",
 			Severity:    SeverityWarn,
-			IgnorePaths: []string{PathVintage, PathChanges, PathClusterApps, PathCRDs},
 			HasValue:    true,
 		},
 		{
@@ -135,7 +118,6 @@ func GetChecks() []Check {
 		{
 			ID:          NoUserQuestions,
 			Description: "The page should have user_questions assigned",
-			IgnorePaths: []string{PathCRDs, PathVintageCRDs, PathChanges},
 			Severity:    SeverityFail,
 		},
 		{
