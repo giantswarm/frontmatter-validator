@@ -1,6 +1,8 @@
 package validator
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -176,367 +178,149 @@ owner:
 
 // Runbook validation tests
 
-func TestValidateFile_ValidRunbook(t *testing.T) {
-	v := New()
-	content := `---
-title: Test Runbook
-description: This is a valid runbook description that is long enough and ends with a full stop.
-layout: runbook
-toc_hide: true
-owner:
-  - https://github.com/orgs/giantswarm/teams/team-honeybadger
-last_review_date: 2024-09-01
-runbook:
-  variables:
-    - name: INSTALLATION
-      description: Installation name
-      default: golem
-    - name: CLUSTER_ID
-      description: Cluster identifier
-  dashboards:
-    - name: Cilium performance
-      link: https://grafana-$INSTALLATION.teleport.giantswarm.io/d/cilium-performance
-  known_issues:
-    - url: https://github.com/giantswarm/giantswarm/issues/28493
-      description: Version 1.13 performance is not great in general
-    - url: https://github.com/giantswarm/giantswarm/issues/29998
----
-
-# Test Runbook Content
-`
-
-	result := v.ValidateFile(content, "test.md")
-
-	// Should have no runbook-specific failures
-	hasRunbookFailures := false
-	for _, check := range result.Checks {
-		if strings.HasPrefix(check.Check, "RUNBOOK_") || strings.HasPrefix(check.Check, "INVALID_RUNBOOK") {
-			checkInfo := GetCheckByID(check.Check)
-			if checkInfo != nil && checkInfo.Severity == SeverityFail {
-				hasRunbookFailures = true
-				t.Errorf("Unexpected runbook failure: %s", check.Check)
-			}
-		}
-	}
-
-	if hasRunbookFailures {
-		t.Error("Valid runbook should not produce runbook-specific failure checks")
-	}
-}
-
-func TestValidateFile_RunbookLayoutNotSet(t *testing.T) {
-	v := New()
-	content := `---
-title: Test Runbook
-description: This is a valid runbook description that is long enough and ends with a full stop.
-owner:
-  - https://github.com/orgs/giantswarm/teams/team-honeybadger
-runbook:
-  variables:
-    - name: INSTALLATION
-      description: Installation name
-  dashboards:
-    - name: Test Dashboard
-      link: https://example.com
-  known_issues:
-    - url: https://github.com/giantswarm/giantswarm/issues/1
----
-
-# Test Content
-`
-
-	result := v.ValidateFile(content, "test.md")
-
-	hasLayoutCheck := false
-	for _, check := range result.Checks {
-		if check.Check == RunbookLayoutNotSet {
-			hasLayoutCheck = true
-		}
-	}
-
-	if !hasLayoutCheck {
-		t.Error("Expected RUNBOOK_LAYOUT_NOT_SET check when runbook config exists without layout: runbook")
-	}
-}
-
-func TestValidateFile_RunbookAppearsInMenu(t *testing.T) {
-	v := New()
-	content := `---
-title: Test Runbook
-description: This is a valid runbook description that is long enough and ends with a full stop.
-layout: runbook
-owner:
-  - https://github.com/orgs/giantswarm/teams/team-honeybadger
-runbook:
-  variables:
-    - name: INSTALLATION
-      description: Installation name
-  dashboards:
-    - name: Test Dashboard
-      link: https://example.com
-  known_issues:
-    - url: https://github.com/giantswarm/giantswarm/issues/1
----
-
-# Test Content
-`
-
-	result := v.ValidateFile(content, "test.md")
-
-	hasMenuCheck := false
-	for _, check := range result.Checks {
-		if check.Check == RunbookAppearsInMenu {
-			hasMenuCheck = true
-		}
-	}
-
-	if !hasMenuCheck {
-		t.Error("Expected RUNBOOK_APPEARS_IN_MENU check when toc_hide is not set to true")
-	}
-}
-
-func TestValidateFile_InvalidRunbookVariables(t *testing.T) {
+func TestValidateFile_Runbooks(t *testing.T) {
 	tests := []struct {
-		name        string
-		content     string
-		expectedErr string
+		name         string
+		filename     string
+		expectChecks []string // Expected check IDs that should be present
+		expectValid  bool     // Whether this should be a valid runbook (no runbook-specific errors)
 	}{
 		{
-			name: "variable without name",
-			content: `---
-title: Test Runbook
-layout: runbook
-toc_hide: true
-runbook:
-  variables:
-    - description: Missing name
-  dashboards:
-    - name: Test Dashboard
-      link: https://example.com
-  known_issues:
-    - url: https://github.com/giantswarm/giantswarm/issues/1
----`,
-			expectedErr: RunbookVariableWithoutName,
+			name:        "valid complete runbook",
+			filename:    "valid-complete.md",
+			expectValid: true,
 		},
 		{
-			name: "invalid variable name format",
-			content: `---
-title: Test Runbook
-layout: runbook
-toc_hide: true
-runbook:
-  variables:
-    - name: invalid-name
-      description: Invalid name format
-  dashboards:
-    - name: Test Dashboard
-      link: https://example.com
-  known_issues:
-    - url: https://github.com/giantswarm/giantswarm/issues/1
----`,
-			expectedErr: InvalidRunbookVariableName,
+			name:        "valid minimal runbook",
+			filename:    "valid-minimal.md",
+			expectValid: true,
 		},
 		{
-			name: "duplicate variable names",
-			content: `---
-title: Test Runbook
-layout: runbook
-toc_hide: true
-runbook:
-  variables:
-    - name: INSTALLATION
-      description: First installation
-    - name: INSTALLATION
-      description: Duplicate installation
-  dashboards:
-    - name: Test Dashboard
-      link: https://example.com
-  known_issues:
-    - url: https://github.com/giantswarm/giantswarm/issues/1
----`,
-			expectedErr: InvalidRunbookVariableName,
+			name:        "valid runbook with empty arrays",
+			filename:    "valid-empty-arrays.md",
+			expectValid: true,
+		},
+		{
+			name:        "valid runbook with only variables",
+			filename:    "valid-only-variables.md",
+			expectValid: true,
+		},
+		{
+			name:         "runbook layout not set",
+			filename:     "layout-not-set.md",
+			expectChecks: []string{RunbookLayoutNotSet},
+		},
+		{
+			name:         "runbook appears in menu",
+			filename:     "appears-in-menu.md",
+			expectChecks: []string{RunbookAppearsInMenu},
+		},
+		{
+			name:         "variable without name",
+			filename:     "variable-without-name.md",
+			expectChecks: []string{RunbookVariableWithoutName},
+		},
+		{
+			name:         "invalid variable name format",
+			filename:     "invalid-variable-name.md",
+			expectChecks: []string{InvalidRunbookVariableName},
+		},
+		{
+			name:         "duplicate variable names",
+			filename:     "duplicate-variable-names.md",
+			expectChecks: []string{InvalidRunbookVariableName},
+		},
+		{
+			name:         "dashboard without name",
+			filename:     "dashboard-without-name.md",
+			expectChecks: []string{InvalidRunbookDashboard},
+		},
+		{
+			name:         "dashboard without link",
+			filename:     "dashboard-without-link.md",
+			expectChecks: []string{InvalidRunbookDashboard},
+		},
+		{
+			name:         "dashboard with undefined variable",
+			filename:     "dashboard-undefined-variable.md",
+			expectChecks: []string{InvalidRunbookDashboardLink},
+		},
+		{
+			name:         "dashboard with invalid URL format",
+			filename:     "dashboard-invalid-url.md",
+			expectChecks: []string{InvalidRunbookDashboardLink},
+		},
+		{
+			name:         "known issue without URL",
+			filename:     "known-issue-without-url.md",
+			expectChecks: []string{InvalidRunbookKnownIssue},
+		},
+		{
+			name:         "known issue with invalid URL format",
+			filename:     "known-issue-invalid-url.md",
+			expectChecks: []string{InvalidRunbookKnownIssueURL},
+		},
+		{
+			name:     "multiple validation errors",
+			filename: "multiple-errors.md",
+			expectChecks: []string{
+				RunbookAppearsInMenu,
+				InvalidRunbookVariableName,
+				RunbookVariableWithoutName,
+				InvalidRunbookDashboardLink,
+				InvalidRunbookKnownIssue,
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v := New()
-			result := v.ValidateFile(tt.content+"\n# Test Content\n", "test.md")
-
-			hasExpectedCheck := false
-			for _, check := range result.Checks {
-				if check.Check == tt.expectedErr {
-					hasExpectedCheck = true
-					break
-				}
+			// Read test file
+			content, err := os.ReadFile(filepath.Join("testdata", "runbooks", tt.filename))
+			if err != nil {
+				t.Fatalf("Failed to read test file %s: %v", tt.filename, err)
 			}
 
-			if !hasExpectedCheck {
-				t.Errorf("Expected %s check for %s", tt.expectedErr, tt.name)
+			// Validate the content
+			v := New()
+			result := v.ValidateFile(string(content), tt.filename)
+
+			if tt.expectValid {
+				// Check that there are no runbook-specific failures
+				var runbookErrors []string
+				for _, check := range result.Checks {
+					if strings.HasPrefix(check.Check, "RUNBOOK_") || strings.HasPrefix(check.Check, "INVALID_RUNBOOK") {
+						checkInfo := GetCheckByID(check.Check)
+						if checkInfo != nil && checkInfo.Severity == SeverityFail {
+							runbookErrors = append(runbookErrors, check.Check)
+						}
+					}
+				}
+				if len(runbookErrors) > 0 {
+					t.Errorf("Expected valid runbook but got runbook errors: %v", runbookErrors)
+				}
+			} else {
+				// Check that expected checks are present
+				foundChecks := make(map[string]bool)
+				for _, check := range result.Checks {
+					foundChecks[check.Check] = true
+				}
+
+				for _, expectedCheck := range tt.expectChecks {
+					if !foundChecks[expectedCheck] {
+						t.Errorf("Expected check %s but it was not found. Found checks: %v", expectedCheck, getCheckIDs(result.Checks))
+					}
+				}
 			}
 		})
 	}
 }
 
-func TestValidateFile_InvalidRunbookDashboards(t *testing.T) {
-	tests := []struct {
-		name        string
-		content     string
-		expectedErr string
-	}{
-		{
-			name: "dashboard without name",
-			content: `---
-title: Test Runbook
-layout: runbook
-toc_hide: true
-runbook:
-  variables:
-    - name: INSTALLATION
-      description: Installation name
-  dashboards:
-    - link: https://example.com
-  known_issues:
-    - url: https://github.com/giantswarm/giantswarm/issues/1
----`,
-			expectedErr: InvalidRunbookDashboard,
-		},
-		{
-			name: "dashboard without link",
-			content: `---
-title: Test Runbook
-layout: runbook
-toc_hide: true
-runbook:
-  variables:
-    - name: INSTALLATION
-      description: Installation name
-  dashboards:
-    - name: Test Dashboard
-  known_issues:
-    - url: https://github.com/giantswarm/giantswarm/issues/1
----`,
-			expectedErr: InvalidRunbookDashboard,
-		},
-		{
-			name: "dashboard with undefined variable",
-			content: `---
-title: Test Runbook
-layout: runbook
-toc_hide: true
-runbook:
-  variables:
-    - name: INSTALLATION
-      description: Installation name
-  dashboards:
-    - name: Test Dashboard
-      link: https://grafana-$UNDEFINED_VAR.example.com
-  known_issues:
-    - url: https://github.com/giantswarm/giantswarm/issues/1
----`,
-			expectedErr: InvalidRunbookDashboardLink,
-		},
-		{
-			name: "dashboard with invalid URL format",
-			content: `---
-title: Test Runbook
-layout: runbook
-toc_hide: true
-runbook:
-  variables:
-    - name: INSTALLATION
-      description: Installation name
-  dashboards:
-    - name: Test Dashboard
-      link: not-a-valid-url
-  known_issues:
-    - url: https://github.com/giantswarm/giantswarm/issues/1
----`,
-			expectedErr: InvalidRunbookDashboardLink,
-		},
+// Helper function to extract check IDs from results for debugging
+func getCheckIDs(checks []CheckResult) []string {
+	var ids []string
+	for _, check := range checks {
+		ids = append(ids, check.Check)
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			v := New()
-			result := v.ValidateFile(tt.content+"\n# Test Content\n", "test.md")
-
-			hasExpectedCheck := false
-			for _, check := range result.Checks {
-				if check.Check == tt.expectedErr {
-					hasExpectedCheck = true
-					break
-				}
-			}
-
-			if !hasExpectedCheck {
-				t.Errorf("Expected %s check for %s", tt.expectedErr, tt.name)
-			}
-		})
-	}
-}
-
-func TestValidateFile_InvalidRunbookKnownIssues(t *testing.T) {
-	tests := []struct {
-		name        string
-		content     string
-		expectedErr string
-	}{
-		{
-			name: "known issue without URL",
-			content: `---
-title: Test Runbook
-layout: runbook
-toc_hide: true
-runbook:
-  variables:
-    - name: INSTALLATION
-      description: Installation name
-  dashboards:
-    - name: Test Dashboard
-      link: https://example.com
-  known_issues:
-    - description: Missing URL
----`,
-			expectedErr: InvalidRunbookKnownIssue,
-		},
-		{
-			name: "known issue with invalid URL format",
-			content: `---
-title: Test Runbook
-layout: runbook
-toc_hide: true
-runbook:
-  variables:
-    - name: INSTALLATION
-      description: Installation name
-  dashboards:
-    - name: Test Dashboard
-      link: https://example.com
-  known_issues:
-    - url: not-a-valid-url
-      description: Invalid URL format
----`,
-			expectedErr: InvalidRunbookKnownIssueURL,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			v := New()
-			result := v.ValidateFile(tt.content+"\n# Test Content\n", "test.md")
-
-			hasExpectedCheck := false
-			for _, check := range result.Checks {
-				if check.Check == tt.expectedErr {
-					hasExpectedCheck = true
-					break
-				}
-			}
-
-			if !hasExpectedCheck {
-				t.Errorf("Expected %s check for %s", tt.expectedErr, tt.name)
-			}
-		})
-	}
+	return ids
 }
