@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added checks related to runbooks.
+
 ### Removed
 
 - Removed `--validation` flag. This functionality can now be covered by multiple configuration files.
