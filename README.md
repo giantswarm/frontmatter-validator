@@ -136,7 +136,7 @@ Directory overrides support glob patterns:
 
 ### Available Check IDs
 
-Use the exact check IDs from the [Validators](#validators) section in your configuration files. All validator IDs can be referenced in the `enabled_checks` and `disabled_checks` lists.
+Use the exact check IDs from the [Checks](#checks) section in your configuration files. All validator IDs can be referenced in the `enabled_checks` and `disabled_checks` lists.
 
 ### Example configurations
 
@@ -175,13 +175,6 @@ directory_overrides:
       - NO_LAST_REVIEW_DATE
       - REVIEW_TOO_LONG_AGO
 ```
-
-### Migration from --validation Flag
-
-The `--validation` flag is now deprecated in favor of configuration files:
-
-- Instead of `--validation=all`, use the default configuration or `--config=./frontmatter-validator.yaml`
-- Instead of `--validation=last-reviewed`, use `--config=./frontmatter-validator-last-reviewed.yaml`
 
 ### GitHub Actions integration
 
