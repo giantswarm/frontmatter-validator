@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed front matter parsing to handle quoted date strings in `last_review_date` field. The validator now supports various date formats including quoted strings (`"2025-01-10"`), unquoted dates (`2025-01-10`), and full timestamps (`"2025-01-10T00:00:00Z"`). This resolves false `NO_FRONT_MATTER` errors when files contain valid front matter with quoted dates.
+
 ## [0.3.0] - 2025-09-30
 
 ### Added

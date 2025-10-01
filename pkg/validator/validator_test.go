@@ -324,3 +324,206 @@ func getCheckIDs(checks []CheckResult) []string {
 	}
 	return ids
 }
+
+func TestFlexibleDateParsing(t *testing.T) {
+	tests := []struct {
+		name        string
+		content     string
+		expectError bool
+		expectDate  string
+	}{
+		{
+			name: "quoted date string",
+			content: `---
+title: Test
+description: Test description that is long enough and ends with a full stop.
+last_review_date: "2025-01-10"
+owner:
+  - https://github.com/orgs/giantswarm/teams/team-honeybadger
+user_questions:
+  - What is this test for?
+---
+`,
+			expectError: false,
+			expectDate:  "2025-01-10",
+		},
+		{
+			name: "unquoted date",
+			content: `---
+title: Test
+description: Test description that is long enough and ends with a full stop.
+last_review_date: 2025-01-10
+owner:
+  - https://github.com/orgs/giantswarm/teams/team-honeybadger
+user_questions:
+  - What is this test for?
+---
+`,
+			expectError: false,
+			expectDate:  "2025-01-10",
+		},
+		{
+			name: "RFC3339 timestamp",
+			content: `---
+title: Test
+description: Test description that is long enough and ends with a full stop.
+last_review_date: "2025-01-10T00:00:00Z"
+owner:
+  - https://github.com/orgs/giantswarm/teams/team-honeybadger
+user_questions:
+  - What is this test for?
+---
+`,
+			expectError: false,
+			expectDate:  "2025-01-10",
+		},
+		{
+			name: "ISO 8601 without timezone",
+			content: `---
+title: Test
+description: Test description that is long enough and ends with a full stop.
+last_review_date: "2025-01-10T14:30:00"
+owner:
+  - https://github.com/orgs/giantswarm/teams/team-honeybadger
+user_questions:
+  - What is this test for?
+---
+`,
+			expectError: false,
+			expectDate:  "2025-01-10",
+		},
+		{
+			name: "invalid date format",
+			content: `---
+title: Test
+description: Test description that is long enough and ends with a full stop.
+last_review_date: "invalid-date"
+owner:
+  - https://github.com/orgs/giantswarm/teams/team-honeybadger
+user_questions:
+  - What is this test for?
+---
+`,
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := New()
+			result := v.ValidateFile(tt.content, "test.md")
+
+			if tt.expectError {
+				// Should have NO_FRONT_MATTER error due to parsing failure
+				found := false
+				for _, check := range result.Checks {
+					if check.Check == NoFrontMatter {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("Expected NO_FRONT_MATTER error for invalid date, but didn't find it")
+				}
+			} else {
+				// Should not have NO_FRONT_MATTER error
+				for _, check := range result.Checks {
+					if check.Check == NoFrontMatter {
+						t.Errorf("Unexpected NO_FRONT_MATTER error: %+v", check)
+					}
+				}
+				// Should have parsed front matter successfully
+				if result.NumFrontMatterLines == 0 {
+					t.Errorf("Expected front matter to be parsed, but NumFrontMatterLines is 0")
+				}
+			}
+		})
+	}
+}
+
+func TestFlexibleDateValidation(t *testing.T) {
+	tests := []struct {
+		name           string
+		content        string
+		expectChecks   []string
+		unexpectChecks []string
+	}{
+		{
+			name: "future date should trigger INVALID_LAST_REVIEW_DATE",
+			content: `---
+title: Test
+description: Test description that is long enough and ends with a full stop.
+last_review_date: "2030-01-01"
+owner:
+  - https://github.com/orgs/giantswarm/teams/team-honeybadger
+user_questions:
+  - What is this test for?
+---
+`,
+			expectChecks:   []string{InvalidLastReviewDate},
+			unexpectChecks: []string{NoFrontMatter, NoLastReviewDate},
+		},
+		{
+			name: "very old date should trigger REVIEW_TOO_LONG_AGO",
+			content: `---
+title: Test
+description: Test description that is long enough and ends with a full stop.
+last_review_date: "2020-01-01"
+owner:
+  - https://github.com/orgs/giantswarm/teams/team-honeybadger
+user_questions:
+  - What is this test for?
+---
+`,
+			expectChecks:   []string{ReviewTooLongAgo},
+			unexpectChecks: []string{NoFrontMatter, NoLastReviewDate, InvalidLastReviewDate},
+		},
+		{
+			name: "recent date should not trigger date-related errors",
+			content: `---
+title: Test
+description: Test description that is long enough and ends with a full stop.
+last_review_date: "2024-12-01"
+owner:
+  - https://github.com/orgs/giantswarm/teams/team-honeybadger
+user_questions:
+  - What is this test for?
+---
+`,
+			expectChecks:   []string{},
+			unexpectChecks: []string{NoFrontMatter, NoLastReviewDate, InvalidLastReviewDate, ReviewTooLongAgo},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := New()
+			result := v.ValidateFile(tt.content, "test.md")
+
+			checkIDs := getCheckIDs(result.Checks)
+
+			// Check expected checks are present
+			for _, expectedCheck := range tt.expectChecks {
+				found := false
+				for _, checkID := range checkIDs {
+					if checkID == expectedCheck {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("Expected check %s not found. Got checks: %v", expectedCheck, checkIDs)
+				}
+			}
+
+			// Check unexpected checks are not present
+			for _, unexpectedCheck := range tt.unexpectChecks {
+				for _, checkID := range checkIDs {
+					if checkID == unexpectedCheck {
+						t.Errorf("Unexpected check %s found. Got checks: %v", unexpectedCheck, checkIDs)
+					}
+				}
+			}
+		})
+	}
+}

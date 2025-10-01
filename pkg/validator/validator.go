@@ -374,10 +374,10 @@ func (v *Validator) validateLastReviewDate(fm *FrontMatter, filePath string, res
 		today := time.Now()
 
 		// Check if date is in the future
-		if fm.LastReviewDate.After(today) {
+		if fm.LastReviewDate.Time.After(today) {
 			result.Checks = append(result.Checks, CheckResult{
 				Check: InvalidLastReviewDate,
-				Value: fm.LastReviewDate.Format("2006-01-02"),
+				Value: fm.LastReviewDate.Time.Format("2006-01-02"),
 				Title: fm.Title,
 				Owner: fm.Owner,
 			})
@@ -388,10 +388,10 @@ func (v *Validator) validateLastReviewDate(fm *FrontMatter, filePath string, res
 				expiration = *fm.ExpirationInDays
 			}
 
-			if today.Sub(*fm.LastReviewDate) > time.Duration(expiration)*24*time.Hour {
+			if today.Sub(fm.LastReviewDate.Time) > time.Duration(expiration)*24*time.Hour {
 				result.Checks = append(result.Checks, CheckResult{
 					Check: ReviewTooLongAgo,
-					Value: fm.LastReviewDate.Format("2006-01-02"),
+					Value: fm.LastReviewDate.Time.Format("2006-01-02"),
 					Title: fm.Title,
 					Owner: fm.Owner,
 				})
