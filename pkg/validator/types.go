@@ -1,7 +1,11 @@
 package validator
 
 import (
+	"fmt"
+	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Validation modes
@@ -79,6 +83,47 @@ type ValidationResult struct {
 	Checks              []CheckResult `json:"checks"`
 }
 
+// FlexibleDate is a custom type that can parse various date formats
+type FlexibleDate struct {
+	time.Time
+}
+
+// UnmarshalYAML implements custom YAML unmarshaling for flexible date parsing
+func (fd *FlexibleDate) UnmarshalYAML(value *yaml.Node) error {
+	var dateStr string
+	if err := value.Decode(&dateStr); err != nil {
+		return err
+	}
+
+	// Try parsing various date formats
+	formats := []string{
+		"2006-01-02",                // YYYY-MM-DD (most common)
+		"2006-01-02T15:04:05Z07:00", // RFC3339 (full timestamp)
+		"2006-01-02T15:04:05Z",      // RFC3339 UTC
+		"2006-01-02T15:04:05",       // ISO 8601 without timezone
+		"2006-01-02 15:04:05",       // Space separated
+		"01/02/2006",                // MM/DD/YYYY
+		"02/01/2006",                // DD/MM/YYYY
+	}
+
+	// Clean up the date string
+	dateStr = strings.TrimSpace(dateStr)
+
+	for _, format := range formats {
+		if t, err := time.Parse(format, dateStr); err == nil {
+			fd.Time = t
+			return nil
+		}
+	}
+
+	return fmt.Errorf("unable to parse date %q: supported formats are YYYY-MM-DD, RFC3339, etc.", dateStr)
+}
+
+// MarshalYAML implements custom YAML marshaling
+func (fd FlexibleDate) MarshalYAML() (interface{}, error) {
+	return fd.Time.Format("2006-01-02"), nil
+}
+
 // RunbookVariable represents a runbook variable
 type RunbookVariable struct {
 	Name        string `yaml:"name"`
@@ -107,28 +152,28 @@ type Runbook struct {
 
 // FrontMatter represents the parsed frontmatter structure
 type FrontMatter struct {
-	Title               string      `yaml:"title"`
-	Description         string      `yaml:"description"`
-	LinkTitle           string      `yaml:"linkTitle"`
-	Owner               []string    `yaml:"owner"`
-	LastReviewDate      *time.Time  `yaml:"last_review_date"`
-	UserQuestions       []string    `yaml:"user_questions"`
-	Weight              *int        `yaml:"weight"`
-	Menu                interface{} `yaml:"menu"`
-	ExpirationInDays    *int        `yaml:"expiration_in_days"`
-	Date                string      `yaml:"date"`
-	Aliases             []string    `yaml:"aliases"`
-	ChangesCategories   []string    `yaml:"changes_categories"`
-	ChangesEntry        interface{} `yaml:"changes_entry"`
-	CRD                 interface{} `yaml:"crd"`
-	Layout              string      `yaml:"layout"`
-	Mermaid             bool        `yaml:"mermaid"`
-	Search              interface{} `yaml:"search"`
-	SourceRepository    string      `yaml:"source_repository"`
-	SourceRepositoryRef string      `yaml:"source_repository_ref"`
-	TechnicalName       string      `yaml:"technical_name"`
-	TocHide             bool        `yaml:"toc_hide"`
-	Runbook             *Runbook    `yaml:"runbook,omitempty"`
+	Title               string        `yaml:"title"`
+	Description         string        `yaml:"description"`
+	LinkTitle           string        `yaml:"linkTitle"`
+	Owner               []string      `yaml:"owner"`
+	LastReviewDate      *FlexibleDate `yaml:"last_review_date"`
+	UserQuestions       []string      `yaml:"user_questions"`
+	Weight              *int          `yaml:"weight"`
+	Menu                interface{}   `yaml:"menu"`
+	ExpirationInDays    *int          `yaml:"expiration_in_days"`
+	Date                string        `yaml:"date"`
+	Aliases             []string      `yaml:"aliases"`
+	ChangesCategories   []string      `yaml:"changes_categories"`
+	ChangesEntry        interface{}   `yaml:"changes_entry"`
+	CRD                 interface{}   `yaml:"crd"`
+	Layout              string        `yaml:"layout"`
+	Mermaid             bool          `yaml:"mermaid"`
+	Search              interface{}   `yaml:"search"`
+	SourceRepository    string        `yaml:"source_repository"`
+	SourceRepositoryRef string        `yaml:"source_repository_ref"`
+	TechnicalName       string        `yaml:"technical_name"`
+	TocHide             bool          `yaml:"toc_hide"`
+	Runbook             *Runbook      `yaml:"runbook,omitempty"`
 }
 
 // JSONOutput represents the JSON output format for issues
