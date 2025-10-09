@@ -8,7 +8,7 @@ RUN go mod download
 COPY . .
 RUN go build -v .
 
-FROM gsoci.azurecr.io/giantswarm/alpine:3.22.1
+FROM gsoci.azurecr.io/giantswarm/alpine:3.22.2
 COPY --from=builder /usr/src/app/frontmatter-validator /usr/local/bin/frontmatter-validator
 RUN chmod +x /usr/local/bin/frontmatter-validator
 
