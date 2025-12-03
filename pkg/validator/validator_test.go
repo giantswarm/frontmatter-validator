@@ -483,7 +483,7 @@ user_questions:
 			content: `---
 title: Test
 description: Test description that is long enough and ends with a full stop.
-last_review_date: "2024-12-01"
+last_review_date: "2025-11-01"
 owner:
   - https://github.com/orgs/giantswarm/teams/team-honeybadger
 user_questions:
