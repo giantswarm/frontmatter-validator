@@ -7,7 +7,7 @@ Frontmatter is metadata enclosed in Markdown files, like page title, description
 ## Features
 
 - Written in Go
-- Parses YAML frontmatter using `gopkg.in/yaml.v3`
+- Parses YAML frontmatter using `go.yaml.in/yaml/v4`
 - Configurable set of validation rules
 - Creates GitHub Actions run annotations for problems found
 - Multiple output formats (stdout with colors, JSON)

@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/spf13/afero v1.15.0
 	github.com/spf13/cobra v1.10.2
-	gopkg.in/yaml.v3 v3.0.1
+	go.yaml.in/yaml/v4 v4.0.0-rc.4
 )
 
 require (
