@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed `NO_TITLE`, `SHORT_TITLE`, `LONG_TITLE`, `UNKNOWN_ATTRIBUTE`, `NO_WEIGHT`, and `NO_LINK_TITLE` checks ignoring `disabled_checks` configuration. These checks were not consulting the config manager, so `directory_overrides` had no effect on them.
+
 ## [0.3.1] - 2025-10-01
 
 ### Fixed
