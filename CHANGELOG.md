@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-03-03
+
 ### Fixed
 
 - Fixed `NO_TITLE`, `SHORT_TITLE`, `LONG_TITLE`, `UNKNOWN_ATTRIBUTE`, `NO_WEIGHT`, and `NO_LINK_TITLE` checks ignoring `disabled_checks` configuration. These checks were not consulting the config manager, so `directory_overrides` had no effect on them.
@@ -72,7 +74,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First implementation
 
-[Unreleased]: https://github.com/giantswarm/frontmatter-validator/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/giantswarm/frontmatter-validator/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/giantswarm/frontmatter-validator/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/giantswarm/frontmatter-validator/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/giantswarm/frontmatter-validator/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/giantswarm/frontmatter-validator/compare/v0.1.1...v0.2.0
