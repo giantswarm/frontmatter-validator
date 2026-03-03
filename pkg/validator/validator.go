@@ -171,10 +171,10 @@ func (v *Validator) parseFrontMatter(content string) (*FrontMatter, string, int,
 // validateAll runs all validation checks
 func (v *Validator) validateAll(fm *FrontMatter, fmString, filePath string, result *ValidationResult) {
 	// Validate unknown attributes
-	v.validateUnknownAttributes(fmString, result)
+	v.validateUnknownAttributes(fmString, filePath, result)
 
 	// Validate title
-	v.validateTitle(fm, result)
+	v.validateTitle(fm, filePath, result)
 
 	// Validate description
 	v.validateDescription(fm, filePath, result)
@@ -183,7 +183,7 @@ func (v *Validator) validateAll(fm *FrontMatter, fmString, filePath string, resu
 	v.validateLinkTitle(fm, filePath, result)
 
 	// Validate menu and weight
-	v.validateMenuAndWeight(fm, result)
+	v.validateMenuAndWeight(fm, filePath, result)
 
 	// Validate owner
 	v.validateOwner(fm, filePath, result)
@@ -199,7 +199,11 @@ func (v *Validator) validateAll(fm *FrontMatter, fmString, filePath string, resu
 }
 
 // validateUnknownAttributes checks for unknown frontmatter attributes
-func (v *Validator) validateUnknownAttributes(fmString string, result *ValidationResult) {
+func (v *Validator) validateUnknownAttributes(fmString, filePath string, result *ValidationResult) {
+	if v.shouldSkipCheck(filePath, UnknownAttribute) {
+		return
+	}
+
 	// Parse the frontmatter into a generic map to check for unknown keys
 	var generic map[string]interface{}
 	if err := yaml.Unmarshal([]byte(fmString), &generic); err != nil {
@@ -217,23 +221,29 @@ func (v *Validator) validateUnknownAttributes(fmString string, result *Validatio
 }
 
 // validateTitle validates the title field
-func (v *Validator) validateTitle(fm *FrontMatter, result *ValidationResult) {
+func (v *Validator) validateTitle(fm *FrontMatter, filePath string, result *ValidationResult) {
 	if fm.Title == "" {
-		result.Checks = append(result.Checks, CheckResult{
-			Check: NoTitle,
-		})
-	} else {
-		if len(fm.Title) < 5 {
+		if !v.shouldSkipCheck(filePath, NoTitle) {
 			result.Checks = append(result.Checks, CheckResult{
-				Check: ShortTitle,
-				Value: fm.Title,
+				Check: NoTitle,
 			})
 		}
+	} else {
+		if len(fm.Title) < 5 {
+			if !v.shouldSkipCheck(filePath, ShortTitle) {
+				result.Checks = append(result.Checks, CheckResult{
+					Check: ShortTitle,
+					Value: fm.Title,
+				})
+			}
+		}
 		if len(fm.Title) > 100 {
-			result.Checks = append(result.Checks, CheckResult{
-				Check: LongTitle,
-				Value: fm.Title,
-			})
+			if !v.shouldSkipCheck(filePath, LongTitle) {
+				result.Checks = append(result.Checks, CheckResult{
+					Check: LongTitle,
+					Value: fm.Title,
+				})
+			}
 		}
 	}
 }
@@ -300,17 +310,21 @@ func (v *Validator) validateLinkTitle(fm *FrontMatter, filePath string, result *
 }
 
 // validateMenuAndWeight validates menu and weight fields
-func (v *Validator) validateMenuAndWeight(fm *FrontMatter, result *ValidationResult) {
+func (v *Validator) validateMenuAndWeight(fm *FrontMatter, filePath string, result *ValidationResult) {
 	if fm.Menu != nil {
 		if fm.LinkTitle == "" && fm.Title == "" {
-			result.Checks = append(result.Checks, CheckResult{
-				Check: NoLinkTitle,
-			})
+			if !v.shouldSkipCheck(filePath, NoLinkTitle) {
+				result.Checks = append(result.Checks, CheckResult{
+					Check: NoLinkTitle,
+				})
+			}
 		}
 		if fm.Weight == nil {
-			result.Checks = append(result.Checks, CheckResult{
-				Check: NoWeight,
-			})
+			if !v.shouldSkipCheck(filePath, NoWeight) {
+				result.Checks = append(result.Checks, CheckResult{
+					Check: NoWeight,
+				})
+			}
 		}
 	}
 }

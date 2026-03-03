@@ -325,6 +325,154 @@ func getCheckIDs(checks []CheckResult) []string {
 	return ids
 }
 
+// mockConfigManager is a test helper that returns configurable enabled checks per path
+type mockConfigManager struct {
+	enabledChecks map[string][]string // path pattern -> enabled check IDs
+	defaultChecks []string
+}
+
+func (m *mockConfigManager) GetEnabledChecksForPath(filePath string) []string {
+	if checks, ok := m.enabledChecks[filePath]; ok {
+		return checks
+	}
+	return m.defaultChecks
+}
+
+func TestValidateFile_ConfigDisablesNoTitle(t *testing.T) {
+	// Config that disables NO_TITLE, SHORT_TITLE, LONG_TITLE for a specific path
+	cm := &mockConfigManager{
+		enabledChecks: map[string][]string{
+			".claude/skills/test/SKILL.md": {
+				"NO_FRONT_MATTER",
+				"NO_TRAILING_NEWLINE",
+				// NO_TITLE deliberately omitted — should be skipped
+			},
+		},
+		defaultChecks: []string{
+			"NO_FRONT_MATTER",
+			"NO_TRAILING_NEWLINE",
+			"NO_TITLE",
+			"SHORT_TITLE",
+			"LONG_TITLE",
+		},
+	}
+
+	v := NewWithConfig(cm)
+
+	content := "---\ndescription: No title here\n---\n\nContent.\n"
+
+	// Validate with excluded path — NO_TITLE should NOT appear
+	result := v.ValidateFile(content, ".claude/skills/test/SKILL.md")
+	for _, check := range result.Checks {
+		if check.Check == NoTitle {
+			t.Errorf("NO_TITLE should be skipped for excluded path, but was found")
+		}
+	}
+
+	// Validate with default path — NO_TITLE should appear
+	result = v.ValidateFile(content, "src/content/page.md")
+	found := false
+	for _, check := range result.Checks {
+		if check.Check == NoTitle {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("NO_TITLE should be present for default path, but was not found")
+	}
+}
+
+func TestValidateFile_ConfigDisablesUnknownAttribute(t *testing.T) {
+	cm := &mockConfigManager{
+		enabledChecks: map[string][]string{
+			".claude/skills/test/SKILL.md": {
+				"NO_FRONT_MATTER",
+				"NO_TRAILING_NEWLINE",
+				"NO_TITLE",
+				// UNKNOWN_ATTRIBUTE deliberately omitted
+			},
+		},
+		defaultChecks: []string{
+			"NO_FRONT_MATTER",
+			"NO_TRAILING_NEWLINE",
+			"NO_TITLE",
+			"UNKNOWN_ATTRIBUTE",
+		},
+	}
+
+	v := NewWithConfig(cm)
+
+	content := "---\ntitle: Test Title\ncustom_field: some value\n---\n\nContent.\n"
+
+	// Validate with excluded path — UNKNOWN_ATTRIBUTE should NOT appear
+	result := v.ValidateFile(content, ".claude/skills/test/SKILL.md")
+	for _, check := range result.Checks {
+		if check.Check == UnknownAttribute {
+			t.Errorf("UNKNOWN_ATTRIBUTE should be skipped for excluded path, but was found")
+		}
+	}
+
+	// Validate with default path — UNKNOWN_ATTRIBUTE should appear
+	result = v.ValidateFile(content, "src/content/page.md")
+	found := false
+	for _, check := range result.Checks {
+		if check.Check == UnknownAttribute {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("UNKNOWN_ATTRIBUTE should be present for default path, but was not found")
+	}
+}
+
+func TestValidateFile_ConfigDisablesMenuAndWeight(t *testing.T) {
+	cm := &mockConfigManager{
+		enabledChecks: map[string][]string{
+			"excluded/page.md": {
+				"NO_FRONT_MATTER",
+				"NO_TRAILING_NEWLINE",
+				"NO_TITLE",
+				// NO_WEIGHT and NO_LINK_TITLE deliberately omitted
+			},
+		},
+		defaultChecks: []string{
+			"NO_FRONT_MATTER",
+			"NO_TRAILING_NEWLINE",
+			"NO_TITLE",
+			"NO_WEIGHT",
+			"NO_LINK_TITLE",
+		},
+	}
+
+	v := NewWithConfig(cm)
+
+	// File with a menu but no weight and no linkTitle/title
+	content := "---\nmenu:\n  main:\n    parent: test\n---\n\nContent.\n"
+
+	// Validate with excluded path — NO_WEIGHT and NO_LINK_TITLE should NOT appear
+	result := v.ValidateFile(content, "excluded/page.md")
+	for _, check := range result.Checks {
+		if check.Check == NoWeight {
+			t.Errorf("NO_WEIGHT should be skipped for excluded path, but was found")
+		}
+		if check.Check == NoLinkTitle {
+			t.Errorf("NO_LINK_TITLE should be skipped for excluded path, but was found")
+		}
+	}
+
+	// Validate with default path — NO_WEIGHT should appear
+	result = v.ValidateFile(content, "src/content/page.md")
+	foundWeight := false
+	for _, check := range result.Checks {
+		if check.Check == NoWeight {
+			foundWeight = true
+		}
+	}
+	if !foundWeight {
+		t.Errorf("NO_WEIGHT should be present for default path, but was not found")
+	}
+}
+
 func TestFlexibleDateParsing(t *testing.T) {
 	tests := []struct {
 		name        string
