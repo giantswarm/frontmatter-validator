@@ -31,6 +31,31 @@ See [documentation / Checks](docs/checks.md) for information on the checks that 
 
 ## Installation and usage
 
+### Pre-commit hook
+
+This validator can be used as a [pre-commit](https://pre-commit.com/) hook. Add the following to your `.pre-commit-config.yaml`:
+
+```yaml
+repos:
+  - repo: https://github.com/giantswarm/frontmatter-validator
+    rev: v0.3.2  # use a specific tag
+    hooks:
+      - id: frontmatter-validator
+```
+
+To pass a custom configuration file, use the `args` key:
+
+```yaml
+repos:
+  - repo: https://github.com/giantswarm/frontmatter-validator
+    rev: v0.3.2
+    hooks:
+      - id: frontmatter-validator
+        args: ['--config=./my-custom-config.yaml']
+```
+
+The hook runs on markdown files only and validates them using the same checks as the CLI.
+
 ### Building from Source
 
 ```bash
@@ -50,6 +75,9 @@ go build -o frontmatter-validator .
 
 # Validate files in a specific directory
 ./frontmatter-validator --path=/path/to/docs
+
+# Validate specific files as positional arguments
+./frontmatter-validator file1.md file2.md
 
 # Output results as JSON (useful for CI/CD integration)
 ./frontmatter-validator --output=json

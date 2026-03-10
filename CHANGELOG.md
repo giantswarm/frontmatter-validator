@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support usage as a [pre-commit](https://pre-commit.com/) hook. The validator now accepts file paths as positional arguments and exits with a non-zero code when validation issues are found.
+
 ### Changed
 
 - Migrate from gopkg.in/yaml.v3 to go.yaml.in/yaml/v4

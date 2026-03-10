@@ -1,0 +1,7 @@
+- id: frontmatter-validator
+  name: frontmatter-validator
+  description: Validate Hugo frontmatter in Markdown files at Giant Swarm
+  entry: frontmatter-validator
+  language: golang
+  types: [markdown]
+  pass_filenames: true
