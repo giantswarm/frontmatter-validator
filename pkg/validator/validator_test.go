@@ -329,6 +329,7 @@ func getCheckIDs(checks []CheckResult) []string {
 type mockConfigManager struct {
 	enabledChecks map[string][]string // path pattern -> enabled check IDs
 	defaultChecks []string
+	ignoredPaths  map[string]bool
 }
 
 func (m *mockConfigManager) GetEnabledChecksForPath(filePath string) []string {
@@ -336,6 +337,33 @@ func (m *mockConfigManager) GetEnabledChecksForPath(filePath string) []string {
 		return checks
 	}
 	return m.defaultChecks
+}
+
+func (m *mockConfigManager) IsPathIgnored(filePath string) bool {
+	if m.ignoredPaths == nil {
+		return false
+	}
+	return m.ignoredPaths[filePath]
+}
+
+func TestValidateFile_IgnoredPath(t *testing.T) {
+	cm := &mockConfigManager{
+		defaultChecks: []string{"NO_FRONT_MATTER", "NO_TRAILING_NEWLINE"},
+		ignoredPaths:  map[string]bool{"README.md": true},
+	}
+	v := NewWithConfig(cm)
+
+	// File without frontmatter - would normally trigger NO_FRONT_MATTER
+	result := v.ValidateFile("# Just a readme\n", "README.md")
+	if len(result.Checks) != 0 {
+		t.Errorf("Expected no checks for ignored path, got %d: %v", len(result.Checks), result.Checks)
+	}
+
+	// Same content on a non-ignored path should trigger checks
+	result = v.ValidateFile("# Just a readme\n", "src/content/docs/example.md")
+	if len(result.Checks) == 0 {
+		t.Error("Expected checks for non-ignored path, got none")
+	}
 }
 
 func TestValidateFile_ConfigDisablesNoTitle(t *testing.T) {

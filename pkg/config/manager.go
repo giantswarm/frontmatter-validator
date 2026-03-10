@@ -210,6 +210,21 @@ func (m *Manager) getDefaultConfig() *Config {
 	}
 }
 
+// IsPathIgnored checks if a file path should be completely ignored based on ignore_paths configuration
+func (m *Manager) IsPathIgnored(filePath string) bool {
+	if m.config == nil {
+		return false
+	}
+
+	for _, pattern := range m.config.IgnorePaths {
+		if m.pathMatches(filePath, pattern) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // GetConfig returns the loaded configuration
 func (m *Manager) GetConfig() *Config {
 	return m.config

@@ -19,6 +19,7 @@ type Validator struct {
 // ConfigManager interface for configuration management
 type ConfigManager interface {
 	GetEnabledChecksForPath(filePath string) []string
+	IsPathIgnored(filePath string) bool
 }
 
 // New creates a new Validator instance with default configuration
@@ -53,6 +54,10 @@ func createDefaultConfigManager() (ConfigManager, error) {
 
 // defaultConfigManager provides default configuration when no config file is used
 type defaultConfigManager struct{}
+
+func (dcm *defaultConfigManager) IsPathIgnored(filePath string) bool {
+	return false
+}
 
 func (dcm *defaultConfigManager) GetEnabledChecksForPath(filePath string) []string {
 	// Return all checks enabled by default - this matches the old behavior
@@ -110,6 +115,11 @@ func (v *Validator) ValidateFile(content, filePath string) ValidationResult {
 	result := ValidationResult{
 		NumFrontMatterLines: 0,
 		Checks:              []CheckResult{},
+	}
+
+	// Check if path is ignored
+	if v.configManager != nil && v.configManager.IsPathIgnored(filePath) {
+		return result
 	}
 
 	// Check for trailing newline

@@ -4,6 +4,7 @@ package config
 type Config struct {
 	DefaultRules       RuleSet             `yaml:"default_rules"`
 	DirectoryOverrides []DirectoryOverride `yaml:"directory_overrides"`
+	IgnorePaths        []string            `yaml:"ignore_paths,omitempty"`
 }
 
 // RuleSet defines which validation checks are enabled or disabled

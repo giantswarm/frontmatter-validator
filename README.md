@@ -116,9 +116,15 @@ By default, the validator looks for `./frontmatter-validator.yaml` in the curren
 
 ### Configuration file format
 
-The configuration file uses YAML format with two main sections. A JSON Schema is provided at `frontmatter-validator.schema.json` for IDE validation and autocompletion support.
+The configuration file uses YAML format with three main sections. A JSON Schema is provided at `frontmatter-validator.schema.json` for IDE validation and autocompletion support.
 
 ```yaml
+# Files to skip entirely
+ignore_paths:
+  - "README.md"
+  - "CONTRIBUTING.md"
+  - "vendor/**"
+
 # Default rules applied to all files
 default_rules:
   enabled_checks:
@@ -133,7 +139,7 @@ directory_overrides:
     disabled_checks:
       - NO_DESCRIPTION
       - NO_OWNER
-  
+
   - path: "src/content/changes/**"
     disabled_checks:
       - NO_USER_QUESTIONS
@@ -141,8 +147,11 @@ directory_overrides:
 
 ### Configuration sections
 
+#### `ignore_paths`
+List of file path patterns to completely skip during validation. Files matching any of these patterns will not be validated at all. Supports the same glob patterns as `directory_overrides`.
+
 #### `default_rules`
-Defines the baseline validation rules that apply to all files unless overridden.
+Defines the baseline validation rules that apply to all non-ignored files unless overridden.
 
 - `enabled_checks`: List of validation check IDs that should be enabled by default
 

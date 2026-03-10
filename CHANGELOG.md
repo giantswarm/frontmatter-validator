@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added `ignore_paths` configuration option to completely skip files from validation. Supports glob patterns (e.g., `vendor/**`) and exact paths (e.g., `README.md`).
+
 ## [0.4.0] - 2026-03-10
 
 ### Added
