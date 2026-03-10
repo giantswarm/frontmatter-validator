@@ -223,6 +223,72 @@ directory_overrides:
 	}
 }
 
+func TestManager_IsPathIgnored(t *testing.T) {
+	tests := []struct {
+		name        string
+		ignorePaths []string
+		filePath    string
+		want        bool
+	}{
+		{
+			name:        "exact match ignored",
+			ignorePaths: []string{"README.md"},
+			filePath:    "README.md",
+			want:        true,
+		},
+		{
+			name:        "exact match not ignored",
+			ignorePaths: []string{"README.md"},
+			filePath:    "src/content/docs/example.md",
+			want:        false,
+		},
+		{
+			name:        "glob pattern ignored",
+			ignorePaths: []string{"vendor/**"},
+			filePath:    "vendor/some/lib/file.md",
+			want:        true,
+		},
+		{
+			name:        "glob pattern not ignored",
+			ignorePaths: []string{"vendor/**"},
+			filePath:    "src/content/docs/example.md",
+			want:        false,
+		},
+		{
+			name:        "multiple patterns",
+			ignorePaths: []string{"README.md", "CONTRIBUTING.md", ".claude/**"},
+			filePath:    ".claude/skills/test/SKILL.md",
+			want:        true,
+		},
+		{
+			name:        "empty ignore paths",
+			ignorePaths: nil,
+			filePath:    "README.md",
+			want:        false,
+		},
+		{
+			name:        "leading dot-slash normalized",
+			ignorePaths: []string{"README.md"},
+			filePath:    "./README.md",
+			want:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &Manager{
+				config: &Config{
+					IgnorePaths: tt.ignorePaths,
+				},
+			}
+			got := m.IsPathIgnored(tt.filePath)
+			if got != tt.want {
+				t.Errorf("IsPathIgnored(%q) = %v, want %v", tt.filePath, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestNewManager_NoConfigFile(t *testing.T) {
 	// Test with non-existent config file
 	manager, err := NewManager("/non/existent/config.yaml")

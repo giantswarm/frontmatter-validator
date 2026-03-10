@@ -31,6 +31,18 @@
       },
       "additionalProperties": false
     },
+    "ignore_paths": {
+      "type": "array",
+      "title": "Ignore Paths",
+      "description": "List of file path patterns to completely skip during validation. Supports glob patterns like 'vendor/**' or exact paths like 'README.md'.",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "examples": [
+        ["README.md", "CONTRIBUTING.md", "vendor/**"]
+      ]
+    },
     "directory_overrides": {
       "type": "array",
       "title": "Directory Overrides",
