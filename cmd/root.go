@@ -31,7 +31,9 @@ Frontmatter is metadata enclosed in Markdown files, like page title, description
 
 The validator scans a target path recursively for Markdown files and validates their frontmatter
 against a configurable set of rules, creating GitHub Actions run annotations for problems found.`,
-	RunE: runValidation,
+	Args:         cobra.ArbitraryArgs,
+	RunE:         runValidation,
+	SilenceUsage: true,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -58,7 +60,7 @@ func runValidation(cmd *cobra.Command, args []string) error {
 	results := make(map[string]validator.ValidationResult)
 
 	// Get list of files to process
-	filePaths, err := getFilesToProcess()
+	filePaths, err := getFilesToProcess(args)
 	if err != nil {
 		return fmt.Errorf("failed to get files to process: %w", err)
 	}
@@ -96,11 +98,28 @@ func runValidation(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Return error if any validation issues were found
+	if len(results) > 0 {
+		return fmt.Errorf("validation failed: %d file(s) with issues", len(results))
+	}
+
 	return nil
 }
 
-// getFilesToProcess returns the list of files to validate
-func getFilesToProcess() ([]string, error) {
+// getFilesToProcess returns the list of files to validate.
+// Priority: positional args > stdin > --path directory walk.
+func getFilesToProcess(args []string) ([]string, error) {
+	// If positional arguments are provided, use them directly
+	if len(args) > 0 {
+		var filePaths []string
+		for _, arg := range args {
+			if strings.HasSuffix(arg, ".md") {
+				filePaths = append(filePaths, arg)
+			}
+		}
+		return filePaths, nil
+	}
+
 	var filePaths []string
 
 	// Check if we have input from stdin
