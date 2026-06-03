@@ -32,6 +32,7 @@ workflows:
                 - main
                 - master
       - architect/upload-release-assets:
+          binary: frontmatter-validator
           context: architect
           requires:
             - go-build
