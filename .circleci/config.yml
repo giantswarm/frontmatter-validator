@@ -9,7 +9,7 @@ workflows:
       - architect/go-build:
           context: architect
           name: go-build
-          binary: template
+          binary: frontmatter-validator
           architectures: "linux/amd64,linux/arm64,darwin/amd64,darwin/arm64,windows/amd64,windows/arm64"
           filters:
             # Trigger job also on git tag.
