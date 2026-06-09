@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Release binaries now include darwin/amd64, darwin/arm64, windows/amd64, and windows/arm64 alongside the existing linux targets. Windows binaries are named `frontmatter-validator-windows-<arch>.exe`.
 
+### Fixed
+
+- Parse unquoted date values in frontmatter correctly. `go.yaml.in/yaml/v4` v4.0.0-rc.5 resolves unquoted dates (for example `2025-01-10`) with the `!!timestamp` tag and no longer constructs them into string fields, which previously caused valid frontmatter to be reported as missing.
+
 ## [0.5.0] - 2026-03-10
 
 ### Added

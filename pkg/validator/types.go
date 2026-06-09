@@ -90,10 +90,10 @@ type FlexibleDate struct {
 
 // UnmarshalYAML implements custom YAML unmarshaling for flexible date parsing
 func (fd *FlexibleDate) UnmarshalYAML(value *yaml.Node) error {
-	var dateStr string
-	if err := value.Decode(&dateStr); err != nil {
-		return err
-	}
+	// Read the raw scalar text rather than decoding into a string. As of
+	// go.yaml.in/yaml/v4 rc.5, an unquoted date such as 2025-01-10 is resolved
+	// with the !!timestamp tag, which can no longer be decoded into a string.
+	dateStr := value.Value
 
 	// Try parsing various date formats
 	formats := []string{
@@ -161,7 +161,7 @@ type FrontMatter struct {
 	Weight              *int          `yaml:"weight"`
 	Menu                interface{}   `yaml:"menu"`
 	ExpirationInDays    *int          `yaml:"expiration_in_days"`
-	Date                string        `yaml:"date"`
+	Date                *FlexibleDate `yaml:"date"`
 	Aliases             []string      `yaml:"aliases"`
 	ChangesCategories   []string      `yaml:"changes_categories"`
 	ChangesEntry        interface{}   `yaml:"changes_entry"`

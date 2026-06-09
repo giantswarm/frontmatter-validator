@@ -617,6 +617,33 @@ user_questions:
 	}
 }
 
+func TestUnquotedDateFieldParses(t *testing.T) {
+	// An unquoted "date" value is resolved with the !!timestamp tag by
+	// go.yaml.in/yaml/v4 rc.5. It must still parse without producing a
+	// NO_FRONT_MATTER error.
+	content := `---
+title: Test Page
+description: Test description that is long enough and ends with a full stop.
+date: 2023-01-01
+owner:
+  - https://github.com/orgs/giantswarm/teams/team-honeybadger
+user_questions:
+  - What is this test for?
+---
+`
+
+	result := New().ValidateFile(content, "test.md")
+
+	for _, check := range result.Checks {
+		if check.Check == NoFrontMatter {
+			t.Errorf("Unexpected NO_FRONT_MATTER error for unquoted date: field: %+v", check)
+		}
+	}
+	if result.NumFrontMatterLines == 0 {
+		t.Error("Expected front matter to be parsed, but NumFrontMatterLines is 0")
+	}
+}
+
 func TestFlexibleDateValidation(t *testing.T) {
 	tests := []struct {
 		name           string
