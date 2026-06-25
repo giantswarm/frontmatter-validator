@@ -87,3 +87,10 @@ Runbook checks:
 - `NO_USER_QUESTIONS`: checks if the `user_questions` field is missing (except for `_index.md` files).
 - `LONG_USER_QUESTION`: checks if any user question is longer than 100 characters.
 - `NO_QUESTION_MARK`: checks if a user question does not end with a question mark.
+
+### Diátaxis content type
+
+The `diataxis_content_type` field records which [Diátaxis](https://diataxis.fr/) quadrant a page belongs to. Allowed values are `tutorial`, `how-to-guide`, `reference`, `explanation`, and `none` (for pages outside the framework, such as support or meta pages).
+
+- `NO_DIATAXIS_CONTENT_TYPE`: checks if the `diataxis_content_type` field is missing (except for `_index.md` files, like `NO_USER_QUESTIONS`). This check is **opt-in**: enable it via configuration where you want the field to be mandatory.
+- `INVALID_DIATAXIS_CONTENT_TYPE`: checks if a present `diataxis_content_type` value is one of the allowed values. Enabled by default.

@@ -730,3 +730,98 @@ user_questions:
 		})
 	}
 }
+
+func TestValidateFile_DiataxisContentType(t *testing.T) {
+	// Enable both Diátaxis checks (NO_DIATAXIS_CONTENT_TYPE is opt-in by default).
+	cm := &mockConfigManager{
+		defaultChecks: []string{NoDiataxisContentType, InvalidDiataxisContentType},
+	}
+	v := NewWithConfig(cm)
+
+	page := func(typeLine string) string {
+		return "---\ntitle: Test Page\n" + typeLine + "---\n\nBody.\n"
+	}
+
+	tests := []struct {
+		name           string
+		filePath       string
+		content        string
+		expectChecks   []string
+		unexpectChecks []string
+	}{
+		{
+			name:         "missing field on an article",
+			filePath:     "src/content/tutorials/foo/index.md",
+			content:      page(""),
+			expectChecks: []string{NoDiataxisContentType},
+		},
+		{
+			name:           "missing field on an _index.md list page is allowed",
+			filePath:       "src/content/tutorials/foo/_index.md",
+			content:        page(""),
+			unexpectChecks: []string{NoDiataxisContentType, InvalidDiataxisContentType},
+		},
+		{
+			name:           "valid how-to-guide",
+			filePath:       "src/content/tutorials/foo/index.md",
+			content:        page("diataxis_content_type: how-to-guide\n"),
+			unexpectChecks: []string{NoDiataxisContentType, InvalidDiataxisContentType},
+		},
+		{
+			name:           "value none is accepted",
+			filePath:       "src/content/support/foo/index.md",
+			content:        page("diataxis_content_type: none\n"),
+			unexpectChecks: []string{NoDiataxisContentType, InvalidDiataxisContentType},
+		},
+		{
+			name:           "invalid value",
+			filePath:       "src/content/tutorials/foo/index.md",
+			content:        page("diataxis_content_type: tutrial\n"),
+			expectChecks:   []string{InvalidDiataxisContentType},
+			unexpectChecks: []string{NoDiataxisContentType},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := v.ValidateFile(tt.content, tt.filePath)
+			checkIDs := getCheckIDs(result.Checks)
+
+			for _, expected := range tt.expectChecks {
+				found := false
+				for _, id := range checkIDs {
+					if id == expected {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("Expected check %s not found. Got: %v", expected, checkIDs)
+				}
+			}
+
+			for _, unexpected := range tt.unexpectChecks {
+				for _, id := range checkIDs {
+					if id == unexpected {
+						t.Errorf("Unexpected check %s found. Got: %v", unexpected, checkIDs)
+					}
+				}
+			}
+		})
+	}
+}
+
+// TestValidateFile_DiataxisContentTypeOptInByDefault asserts that the required-field
+// check is NOT active under the default configuration (only INVALID is), so existing
+// untagged content keeps validating until a repo opts in.
+func TestValidateFile_DiataxisContentTypeOptInByDefault(t *testing.T) {
+	v := New()
+	content := "---\ntitle: Test Page\ndescription: A description long enough to satisfy the length check please.\nowner:\n  - https://github.com/orgs/giantswarm/teams/team-honeybadger\nuser_questions:\n  - What is this?\n---\n\nBody.\n"
+
+	result := v.ValidateFile(content, "src/content/tutorials/foo/index.md")
+	for _, check := range result.Checks {
+		if check.Check == NoDiataxisContentType {
+			t.Errorf("NO_DIATAXIS_CONTENT_TYPE should be opt-in and not fire under default config")
+		}
+	}
+}

@@ -145,6 +145,9 @@ func (m *Manager) getDefaultConfig() *Config {
 				"NO_USER_QUESTIONS",
 				"LONG_USER_QUESTION",
 				"NO_QUESTION_MARK",
+				// INVALID_DIATAXIS_CONTENT_TYPE is safe to enable by default (only fires on a
+				// bad value). NO_DIATAXIS_CONTENT_TYPE is opt-in — enable it once pages are tagged.
+				"INVALID_DIATAXIS_CONTENT_TYPE",
 			},
 		},
 		DirectoryOverrides: []DirectoryOverride{

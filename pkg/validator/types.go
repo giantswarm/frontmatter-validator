@@ -38,6 +38,9 @@ const (
 	ShortDescription      = "SHORT_DESCRIPTION"
 	ShortTitle            = "SHORT_TITLE"
 	UnknownAttribute      = "UNKNOWN_ATTRIBUTE"
+	// Diátaxis checks
+	NoDiataxisContentType      = "NO_DIATAXIS_CONTENT_TYPE"
+	InvalidDiataxisContentType = "INVALID_DIATAXIS_CONTENT_TYPE"
 	// Runbook checks
 	RunbookLayoutNotSet         = "RUNBOOK_LAYOUT_NOT_SET"
 	InvalidRunbookVariables     = "INVALID_RUNBOOK_VARIABLES"
@@ -158,6 +161,7 @@ type FrontMatter struct {
 	Owner               []string      `yaml:"owner"`
 	LastReviewDate      *FlexibleDate `yaml:"last_review_date"`
 	UserQuestions       []string      `yaml:"user_questions"`
+	DiataxisContentType string        `yaml:"diataxis_content_type"`
 	Weight              *int          `yaml:"weight"`
 	Menu                interface{}   `yaml:"menu"`
 	ExpirationInDays    *int          `yaml:"expiration_in_days"`

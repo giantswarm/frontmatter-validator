@@ -27,6 +27,9 @@ default_rules:
     - NO_USER_QUESTIONS
     - LONG_USER_QUESTION
     - NO_QUESTION_MARK
+    # Diátaxis checks. INVALID_DIATAXIS_CONTENT_TYPE is safe to enable by default (only fires
+    # on a bad value). Add NO_DIATAXIS_CONTENT_TYPE to require the field once pages are tagged.
+    - INVALID_DIATAXIS_CONTENT_TYPE
     # Runbook checks
     - RUNBOOK_LAYOUT_NOT_SET
     - INVALID_RUNBOOK_VARIABLES

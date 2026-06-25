@@ -132,6 +132,18 @@ func GetChecks() []Check {
 			Severity:    SeverityFail,
 			HasValue:    true,
 		},
+		// Diátaxis checks
+		{
+			ID:          NoDiataxisContentType,
+			Description: "The page should declare a diataxis_content_type (tutorial, how-to-guide, reference, explanation, or none)",
+			Severity:    SeverityFail,
+		},
+		{
+			ID:          InvalidDiataxisContentType,
+			Description: "diataxis_content_type must be one of: tutorial, how-to-guide, reference, explanation, none",
+			Severity:    SeverityFail,
+			HasValue:    true,
+		},
 		// Runbook checks
 		{
 			ID:          RunbookLayoutNotSet,
@@ -213,6 +225,7 @@ func GetValidKeys() map[string]bool {
 		"crd":                   true,
 		"date":                  true,
 		"description":           true,
+		"diataxis_content_type": true,
 		"expiration_in_days":    true,
 		"last_review_date":      true,
 		"layout":                true,

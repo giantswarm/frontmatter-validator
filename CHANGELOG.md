@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New `diataxis_content_type` frontmatter field and two checks for it: `NO_DIATAXIS_CONTENT_TYPE` (the field is missing; required on articles but skipped for `_index.md` list pages, mirroring `NO_USER_QUESTIONS`) and `INVALID_DIATAXIS_CONTENT_TYPE` (the value must be one of `tutorial`, `how-to-guide`, `reference`, `explanation`, `none`). `INVALID_DIATAXIS_CONTENT_TYPE` is enabled by default; `NO_DIATAXIS_CONTENT_TYPE` is opt-in — enable it per repository or directory via configuration once pages are tagged.
+
 ### Changed
 
 - Release binaries now include darwin/amd64, darwin/arm64, windows/amd64, and windows/arm64 alongside the existing linux targets. Windows binaries are named `frontmatter-validator-windows-<arch>.exe`.

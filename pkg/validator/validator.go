@@ -85,6 +85,10 @@ func (dcm *defaultConfigManager) GetEnabledChecksForPath(filePath string) []stri
 		"NO_USER_QUESTIONS",
 		"LONG_USER_QUESTION",
 		"NO_QUESTION_MARK",
+		// Diátaxis checks. INVALID_DIATAXIS_CONTENT_TYPE is safe to enable by default
+		// (it only fires when the field is present with a bad value). NO_DIATAXIS_CONTENT_TYPE
+		// is intentionally opt-in — enable it per repo/directory once pages are tagged.
+		"INVALID_DIATAXIS_CONTENT_TYPE",
 		// Runbook checks
 		"RUNBOOK_LAYOUT_NOT_SET",
 		"INVALID_RUNBOOK_VARIABLES",
@@ -200,6 +204,9 @@ func (v *Validator) validateAll(fm *FrontMatter, fmString, filePath string, resu
 
 	// Validate user questions
 	v.validateUserQuestions(fm, filePath, result)
+
+	// Validate diataxis content type
+	v.validateDiataxisContentType(fm, filePath, result)
 
 	// Validate last review date
 	v.validateLastReviewDate(fm, filePath, result)
@@ -382,6 +389,39 @@ func (v *Validator) validateUserQuestions(fm *FrontMatter, filePath string, resu
 					Value: question,
 				})
 			}
+		}
+	}
+}
+
+// validDiataxisContentTypes is the set of allowed diataxis_content_type values.
+var validDiataxisContentTypes = map[string]bool{
+	"tutorial":     true,
+	"how-to-guide": true,
+	"reference":    true,
+	"explanation":  true,
+	"none":         true,
+}
+
+// validateDiataxisContentType validates the diataxis_content_type field.
+// The field is required on articles but not on list pages: like user_questions,
+// the missing-field check is skipped for "_index.md" section pages. When the field
+// is present it must be one of the allowed Diátaxis values.
+func (v *Validator) validateDiataxisContentType(fm *FrontMatter, filePath string, result *ValidationResult) {
+	if fm.DiataxisContentType == "" {
+		if !v.shouldSkipCheck(filePath, NoDiataxisContentType) && !strings.HasSuffix(filePath, "_index.md") {
+			result.Checks = append(result.Checks, CheckResult{
+				Check: NoDiataxisContentType,
+			})
+		}
+		return
+	}
+
+	if !validDiataxisContentTypes[fm.DiataxisContentType] {
+		if !v.shouldSkipCheck(filePath, InvalidDiataxisContentType) {
+			result.Checks = append(result.Checks, CheckResult{
+				Check: InvalidDiataxisContentType,
+				Value: fm.DiataxisContentType,
+			})
 		}
 	}
 }
