@@ -7,6 +7,12 @@ import (
 	"testing"
 )
 
+// Shared fixtures for the tests in this file.
+const (
+	testExpectedReviewDate = "2025-01-10"
+	testTutorialIndexPath  = "src/content/tutorials/foo/index.md"
+)
+
 func TestValidateFile_NoFrontMatter(t *testing.T) {
 	v := New()
 	content := "# Just a markdown file without frontmatter\n"
@@ -348,7 +354,7 @@ func (m *mockConfigManager) IsPathIgnored(filePath string) bool {
 
 func TestValidateFile_IgnoredPath(t *testing.T) {
 	cm := &mockConfigManager{
-		defaultChecks: []string{"NO_FRONT_MATTER", "NO_TRAILING_NEWLINE"},
+		defaultChecks: []string{NoFrontMatter, NoTrailingNewline},
 		ignoredPaths:  map[string]bool{"README.md": true},
 	}
 	v := NewWithConfig(cm)
@@ -371,17 +377,17 @@ func TestValidateFile_ConfigDisablesNoTitle(t *testing.T) {
 	cm := &mockConfigManager{
 		enabledChecks: map[string][]string{
 			".claude/skills/test/SKILL.md": {
-				"NO_FRONT_MATTER",
-				"NO_TRAILING_NEWLINE",
+				NoFrontMatter,
+				NoTrailingNewline,
 				// NO_TITLE deliberately omitted — should be skipped
 			},
 		},
 		defaultChecks: []string{
-			"NO_FRONT_MATTER",
-			"NO_TRAILING_NEWLINE",
-			"NO_TITLE",
-			"SHORT_TITLE",
-			"LONG_TITLE",
+			NoFrontMatter,
+			NoTrailingNewline,
+			NoTitle,
+			ShortTitle,
+			LongTitle,
 		},
 	}
 
@@ -414,17 +420,17 @@ func TestValidateFile_ConfigDisablesUnknownAttribute(t *testing.T) {
 	cm := &mockConfigManager{
 		enabledChecks: map[string][]string{
 			".claude/skills/test/SKILL.md": {
-				"NO_FRONT_MATTER",
-				"NO_TRAILING_NEWLINE",
-				"NO_TITLE",
+				NoFrontMatter,
+				NoTrailingNewline,
+				NoTitle,
 				// UNKNOWN_ATTRIBUTE deliberately omitted
 			},
 		},
 		defaultChecks: []string{
-			"NO_FRONT_MATTER",
-			"NO_TRAILING_NEWLINE",
-			"NO_TITLE",
-			"UNKNOWN_ATTRIBUTE",
+			NoFrontMatter,
+			NoTrailingNewline,
+			NoTitle,
+			UnknownAttribute,
 		},
 	}
 
@@ -457,18 +463,18 @@ func TestValidateFile_ConfigDisablesMenuAndWeight(t *testing.T) {
 	cm := &mockConfigManager{
 		enabledChecks: map[string][]string{
 			"excluded/page.md": {
-				"NO_FRONT_MATTER",
-				"NO_TRAILING_NEWLINE",
-				"NO_TITLE",
+				NoFrontMatter,
+				NoTrailingNewline,
+				NoTitle,
 				// NO_WEIGHT and NO_LINK_TITLE deliberately omitted
 			},
 		},
 		defaultChecks: []string{
-			"NO_FRONT_MATTER",
-			"NO_TRAILING_NEWLINE",
-			"NO_TITLE",
-			"NO_WEIGHT",
-			"NO_LINK_TITLE",
+			NoFrontMatter,
+			NoTrailingNewline,
+			NoTitle,
+			NoWeight,
+			NoLinkTitle,
 		},
 	}
 
@@ -521,7 +527,7 @@ user_questions:
 ---
 `,
 			expectError: false,
-			expectDate:  "2025-01-10",
+			expectDate:  testExpectedReviewDate,
 		},
 		{
 			name: "unquoted date",
@@ -536,7 +542,7 @@ user_questions:
 ---
 `,
 			expectError: false,
-			expectDate:  "2025-01-10",
+			expectDate:  testExpectedReviewDate,
 		},
 		{
 			name: "RFC3339 timestamp",
@@ -551,7 +557,7 @@ user_questions:
 ---
 `,
 			expectError: false,
-			expectDate:  "2025-01-10",
+			expectDate:  testExpectedReviewDate,
 		},
 		{
 			name: "ISO 8601 without timezone",
@@ -566,7 +572,7 @@ user_questions:
 ---
 `,
 			expectError: false,
-			expectDate:  "2025-01-10",
+			expectDate:  testExpectedReviewDate,
 		},
 		{
 			name: "invalid date format",
@@ -751,7 +757,7 @@ func TestValidateFile_DiataxisContentType(t *testing.T) {
 	}{
 		{
 			name:         "missing field on an article",
-			filePath:     "src/content/tutorials/foo/index.md",
+			filePath:     testTutorialIndexPath,
 			content:      page(""),
 			expectChecks: []string{NoDiataxisContentType},
 		},
@@ -763,7 +769,7 @@ func TestValidateFile_DiataxisContentType(t *testing.T) {
 		},
 		{
 			name:           "valid how-to-guide",
-			filePath:       "src/content/tutorials/foo/index.md",
+			filePath:       testTutorialIndexPath,
 			content:        page("diataxis_content_type: how-to-guide\n"),
 			unexpectChecks: []string{NoDiataxisContentType, InvalidDiataxisContentType},
 		},
@@ -775,7 +781,7 @@ func TestValidateFile_DiataxisContentType(t *testing.T) {
 		},
 		{
 			name:           "invalid value",
-			filePath:       "src/content/tutorials/foo/index.md",
+			filePath:       testTutorialIndexPath,
 			content:        page("diataxis_content_type: tutrial\n"),
 			expectChecks:   []string{InvalidDiataxisContentType},
 			unexpectChecks: []string{NoDiataxisContentType},
@@ -818,7 +824,7 @@ func TestValidateFile_DiataxisContentTypeOptInByDefault(t *testing.T) {
 	v := New()
 	content := "---\ntitle: Test Page\ndescription: A description long enough to satisfy the length check please.\nowner:\n  - https://github.com/orgs/giantswarm/teams/team-honeybadger\nuser_questions:\n  - What is this?\n---\n\nBody.\n"
 
-	result := v.ValidateFile(content, "src/content/tutorials/foo/index.md")
+	result := v.ValidateFile(content, testTutorialIndexPath)
 	for _, check := range result.Checks {
 		if check.Check == NoDiataxisContentType {
 			t.Errorf("NO_DIATAXIS_CONTENT_TYPE should be opt-in and not fire under default config")

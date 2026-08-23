@@ -119,12 +119,12 @@ func (fd *FlexibleDate) UnmarshalYAML(value *yaml.Node) error {
 		}
 	}
 
-	return fmt.Errorf("unable to parse date %q: supported formats are YYYY-MM-DD, RFC3339, etc.", dateStr)
+	return fmt.Errorf("unable to parse date %q: supported formats are YYYY-MM-DD, RFC3339, and others", dateStr)
 }
 
 // MarshalYAML implements custom YAML marshaling
 func (fd FlexibleDate) MarshalYAML() (interface{}, error) {
-	return fd.Time.Format("2006-01-02"), nil
+	return fd.Format("2006-01-02"), nil
 }
 
 // RunbookVariable represents a runbook variable

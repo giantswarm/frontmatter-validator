@@ -4,6 +4,15 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/giantswarm/frontmatter-validator/pkg/validator"
+)
+
+// Shared fixtures for the tests in this file.
+const (
+	testDocsExamplePath = "src/content/docs/example.md"
+	testVintageGlob     = "src/content/vintage/**"
+	testReadmePath      = "README.md"
 )
 
 func TestManager_GetEnabledChecksForPath(t *testing.T) {
@@ -17,63 +26,63 @@ func TestManager_GetEnabledChecksForPath(t *testing.T) {
 			name: "default rules only",
 			config: &Config{
 				DefaultRules: RuleSet{
-					EnabledChecks: []string{"NO_TITLE", "NO_DESCRIPTION"},
+					EnabledChecks: []string{validator.NoTitle, validator.NoDescription},
 				},
 			},
-			filePath: "src/content/docs/example.md",
-			want:     []string{"NO_TITLE", "NO_DESCRIPTION"},
+			filePath: testDocsExamplePath,
+			want:     []string{validator.NoTitle, validator.NoDescription},
 		},
 		{
 			name: "directory override disables check",
 			config: &Config{
 				DefaultRules: RuleSet{
-					EnabledChecks: []string{"NO_TITLE", "NO_DESCRIPTION"},
+					EnabledChecks: []string{validator.NoTitle, validator.NoDescription},
 				},
 				DirectoryOverrides: []DirectoryOverride{
 					{
-						Path:           "src/content/vintage/**",
-						DisabledChecks: []string{"NO_DESCRIPTION"},
+						Path:           testVintageGlob,
+						DisabledChecks: []string{validator.NoDescription},
 					},
 				},
 			},
 			filePath: "src/content/vintage/docs/example.md",
-			want:     []string{"NO_TITLE"},
+			want:     []string{validator.NoTitle},
 		},
 		{
 			name: "directory override enables additional check",
 			config: &Config{
 				DefaultRules: RuleSet{
-					EnabledChecks: []string{"NO_TITLE"},
+					EnabledChecks: []string{validator.NoTitle},
 				},
 				DirectoryOverrides: []DirectoryOverride{
 					{
 						Path:          "src/content/special/**",
-						EnabledChecks: []string{"NO_DESCRIPTION"},
+						EnabledChecks: []string{validator.NoDescription},
 					},
 				},
 			},
 			filePath: "src/content/special/example.md",
-			want:     []string{"NO_TITLE", "NO_DESCRIPTION"},
+			want:     []string{validator.NoTitle, validator.NoDescription},
 		},
 		{
 			name: "multiple overrides - most specific wins",
 			config: &Config{
 				DefaultRules: RuleSet{
-					EnabledChecks: []string{"NO_TITLE", "NO_DESCRIPTION", "NO_OWNER"},
+					EnabledChecks: []string{validator.NoTitle, validator.NoDescription, validator.NoOwner},
 				},
 				DirectoryOverrides: []DirectoryOverride{
 					{
 						Path:           "src/content/**",
-						DisabledChecks: []string{"NO_DESCRIPTION"},
+						DisabledChecks: []string{validator.NoDescription},
 					},
 					{
 						Path:          "src/content/special/**",
-						EnabledChecks: []string{"NO_DESCRIPTION"},
+						EnabledChecks: []string{validator.NoDescription},
 					},
 				},
 			},
 			filePath: "src/content/special/example.md",
-			want:     []string{"NO_TITLE", "NO_OWNER", "NO_DESCRIPTION"},
+			want:     []string{validator.NoTitle, validator.NoOwner, validator.NoDescription},
 		},
 	}
 
@@ -124,20 +133,20 @@ func TestManager_pathMatches(t *testing.T) {
 	}{
 		{
 			name:     "exact match",
-			filePath: "src/content/docs/example.md",
-			pattern:  "src/content/docs/example.md",
+			filePath: testDocsExamplePath,
+			pattern:  testDocsExamplePath,
 			want:     true,
 		},
 		{
 			name:     "directory wildcard match",
 			filePath: "src/content/vintage/docs/example.md",
-			pattern:  "src/content/vintage/**",
+			pattern:  testVintageGlob,
 			want:     true,
 		},
 		{
 			name:     "directory wildcard no match",
-			filePath: "src/content/docs/example.md",
-			pattern:  "src/content/vintage/**",
+			filePath: testDocsExamplePath,
+			pattern:  testVintageGlob,
 			want:     false,
 		},
 		{
@@ -148,7 +157,7 @@ func TestManager_pathMatches(t *testing.T) {
 		},
 		{
 			name:     "single level wildcard no match - too deep",
-			filePath: "src/content/docs/example.md",
+			filePath: testDocsExamplePath,
 			pattern:  "src/content/*",
 			want:     false,
 		},
@@ -161,7 +170,7 @@ func TestManager_pathMatches(t *testing.T) {
 		{
 			name:     "directory exact match",
 			filePath: "src/content/vintage",
-			pattern:  "src/content/vintage/**",
+			pattern:  testVintageGlob,
 			want:     true,
 		},
 	}
@@ -192,7 +201,7 @@ directory_overrides:
       - "NO_DESCRIPTION"
 `
 
-	err := os.WriteFile(configPath, []byte(configContent), 0644)
+	err := os.WriteFile(configPath, []byte(configContent), 0o600)
 	if err != nil {
 		t.Fatalf("Failed to create test config file: %v", err)
 	}
@@ -205,7 +214,7 @@ directory_overrides:
 
 	// Test that config was loaded correctly
 	checks := manager.GetEnabledChecksForPath("test/example.md")
-	expected := []string{"NO_TITLE"}
+	expected := []string{validator.NoTitle}
 
 	if len(checks) != len(expected) {
 		t.Errorf("Expected %d checks, got %d", len(expected), len(checks))
@@ -232,14 +241,14 @@ func TestManager_IsPathIgnored(t *testing.T) {
 	}{
 		{
 			name:        "exact match ignored",
-			ignorePaths: []string{"README.md"},
-			filePath:    "README.md",
+			ignorePaths: []string{testReadmePath},
+			filePath:    testReadmePath,
 			want:        true,
 		},
 		{
 			name:        "exact match not ignored",
-			ignorePaths: []string{"README.md"},
-			filePath:    "src/content/docs/example.md",
+			ignorePaths: []string{testReadmePath},
+			filePath:    testDocsExamplePath,
 			want:        false,
 		},
 		{
@@ -251,24 +260,24 @@ func TestManager_IsPathIgnored(t *testing.T) {
 		{
 			name:        "glob pattern not ignored",
 			ignorePaths: []string{"vendor/**"},
-			filePath:    "src/content/docs/example.md",
+			filePath:    testDocsExamplePath,
 			want:        false,
 		},
 		{
 			name:        "multiple patterns",
-			ignorePaths: []string{"README.md", "CONTRIBUTING.md", ".claude/**"},
+			ignorePaths: []string{testReadmePath, "CONTRIBUTING.md", ".claude/**"},
 			filePath:    ".claude/skills/test/SKILL.md",
 			want:        true,
 		},
 		{
 			name:        "empty ignore paths",
 			ignorePaths: nil,
-			filePath:    "README.md",
+			filePath:    testReadmePath,
 			want:        false,
 		},
 		{
 			name:        "leading dot-slash normalized",
-			ignorePaths: []string{"README.md"},
+			ignorePaths: []string{testReadmePath},
 			filePath:    "./README.md",
 			want:        true,
 		},
