@@ -120,11 +120,15 @@ func (f *Formatter) DumpAnnotationsToFS(fs afero.Fs, filename string, results ma
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
-	return encoder.Encode(annotations)
+	if err := encoder.Encode(annotations); err != nil {
+		_ = file.Close()
+		return err
+	}
+
+	return file.Close()
 }
 
 // buildAnnotations creates the annotations data structure from validation results
@@ -156,9 +160,9 @@ func (f *Formatter) buildAnnotations(results map[string]validator.ValidationResu
 				nWarnings++
 			}
 
-			message.WriteString(fmt.Sprintf("%s - %s\n", checkInfo.Severity, checkInfo.Description))
+			fmt.Fprintf(&message, "%s - %s\n", checkInfo.Severity, checkInfo.Description)
 			if checkInfo.HasValue && check.Value != nil && check.Value != "" {
-				message.WriteString(fmt.Sprintf(": %v\n", check.Value))
+				fmt.Fprintf(&message, ": %v\n", check.Value)
 			}
 			message.WriteString("\n")
 		}

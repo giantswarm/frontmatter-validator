@@ -6,6 +6,12 @@ import (
 	"testing"
 )
 
+// Shared fixtures for the tests in this file.
+const (
+	testDocsFile1Path = "docs/file1.md"
+	testDocsFile2Path = "docs/file2.md"
+)
+
 func TestGetFilesToProcess_StdinInput(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -22,19 +28,19 @@ func TestGetFilesToProcess_StdinInput(t *testing.T) {
 		{
 			name:          "multiple markdown files",
 			input:         "docs/file1.md\ndocs/file2.md\n",
-			expectedFiles: []string{"docs/file1.md", "docs/file2.md"},
+			expectedFiles: []string{testDocsFile1Path, testDocsFile2Path},
 			description:   "Should accept multiple markdown files from stdin",
 		},
 		{
 			name:          "mixed file types",
 			input:         "docs/file1.md\ndocs/file2.txt\ndocs/file3.md\n",
-			expectedFiles: []string{"docs/file1.md", "docs/file3.md"},
+			expectedFiles: []string{testDocsFile1Path, "docs/file3.md"},
 			description:   "Should only accept .md files, filtering out other file types",
 		},
 		{
 			name:          "empty lines and whitespace",
 			input:         "  docs/file1.md  \n\n  docs/file2.md\n  \n",
-			expectedFiles: []string{"docs/file1.md", "docs/file2.md"},
+			expectedFiles: []string{testDocsFile1Path, testDocsFile2Path},
 			description:   "Should handle empty lines and trim whitespace",
 		},
 		{

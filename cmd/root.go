@@ -71,7 +71,7 @@ func runValidation(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
-		content, err := os.ReadFile(filePath)
+		content, err := os.ReadFile(filepath.Clean(filePath))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: Could not read file %s: %v\n", filePath, err)
 			continue

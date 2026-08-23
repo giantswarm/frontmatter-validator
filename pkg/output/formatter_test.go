@@ -13,6 +13,16 @@ import (
 	"github.com/giantswarm/frontmatter-validator/pkg/validator"
 )
 
+// Shared fixtures for the tests in this file.
+const (
+	testNameEmptyResults = "empty results"
+	levelFailure         = "failure"
+	testFilePath         = "test.md"
+	testDocsFile1Path    = "docs/file1.md"
+	testDocsFile2Path    = "docs/file2.md"
+	testDocsFilePath     = "docs/test.md"
+)
+
 func TestDumpAnnotationsToFS(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -27,7 +37,7 @@ func TestDumpAnnotationsToFS(t *testing.T) {
 		description     string
 	}{
 		{
-			name:          "empty results",
+			name:          testNameEmptyResults,
 			filename:      "empty-annotations.json",
 			results:       make(map[string]validator.ValidationResult),
 			expectedCount: 0,
@@ -69,7 +79,7 @@ func TestDumpAnnotationsToFS(t *testing.T) {
 				},
 			},
 			expectedCount:   1,
-			expectedLevel:   "failure",
+			expectedLevel:   levelFailure,
 			expectedTitle:   "Found 2 severe problems",
 			expectedFile:    "docs/critical.md",
 			expectedEndLine: 9, // NumFrontMatterLines + 1
@@ -89,7 +99,7 @@ func TestDumpAnnotationsToFS(t *testing.T) {
 				},
 			},
 			expectedCount:   1,
-			expectedLevel:   "failure", // Should be failure due to presence of FAIL checks
+			expectedLevel:   levelFailure, // Should be failure due to presence of FAIL checks
 			expectedTitle:   "Found 2 severe and 1 less severe problems",
 			expectedFile:    "docs/mixed.md",
 			expectedEndLine: 11, // NumFrontMatterLines + 1
@@ -99,7 +109,7 @@ func TestDumpAnnotationsToFS(t *testing.T) {
 			name:     "file with check values",
 			filename: "values-annotations.json",
 			results: map[string]validator.ValidationResult{
-				"test.md": {
+				testFilePath: {
 					NumFrontMatterLines: 4,
 					Checks: []validator.CheckResult{
 						{
@@ -111,9 +121,9 @@ func TestDumpAnnotationsToFS(t *testing.T) {
 				},
 			},
 			expectedCount:   1,
-			expectedLevel:   "failure",
+			expectedLevel:   levelFailure,
 			expectedTitle:   "Found 1 severe problem",
-			expectedFile:    "test.md",
+			expectedFile:    testFilePath,
 			expectedEndLine: 5,
 			messageContains: []string{
 				"This is an extremely long title that definitely exceeds the maximum character limit",
@@ -202,7 +212,7 @@ func TestDumpAnnotationsToFS_MultipleFiles(t *testing.T) {
 
 	// Create test results with multiple files
 	results := map[string]validator.ValidationResult{
-		"docs/file1.md": {
+		testDocsFile1Path: {
 			NumFrontMatterLines: 5,
 			Checks: []validator.CheckResult{
 				{
@@ -211,7 +221,7 @@ func TestDumpAnnotationsToFS_MultipleFiles(t *testing.T) {
 				},
 			},
 		},
-		"docs/file2.md": {
+		testDocsFile2Path: {
 			NumFrontMatterLines: 7,
 			Checks: []validator.CheckResult{
 				{
@@ -247,9 +257,9 @@ func TestDumpAnnotationsToFS_MultipleFiles(t *testing.T) {
 	var file1Annotation, file2Annotation *validator.Annotation
 	for i := range annotations {
 		switch annotations[i].File {
-		case "docs/file1.md":
+		case testDocsFile1Path:
 			file1Annotation = &annotations[i]
-		case "docs/file2.md":
+		case testDocsFile2Path:
 			file2Annotation = &annotations[i]
 		}
 	}
@@ -267,7 +277,7 @@ func TestDumpAnnotationsToFS_MultipleFiles(t *testing.T) {
 	}
 
 	// Verify file2 annotation (failure)
-	if file2Annotation.AnnotationLevel != "failure" {
+	if file2Annotation.AnnotationLevel != levelFailure {
 		t.Errorf("Expected file2 annotation level 'failure', got '%s'", file2Annotation.AnnotationLevel)
 	}
 }
@@ -278,7 +288,7 @@ func TestDumpAnnotationsToFS_FileSystemError(t *testing.T) {
 	formatter := New()
 
 	results := map[string]validator.ValidationResult{
-		"test.md": {
+		testFilePath: {
 			NumFrontMatterLines: 4,
 			Checks: []validator.CheckResult{
 				{
@@ -333,7 +343,7 @@ func TestBuildAnnotations_EdgeCases(t *testing.T) {
 
 	// Test with zero line numbers
 	results := map[string]validator.ValidationResult{
-		"test.md": {
+		testFilePath: {
 			NumFrontMatterLines: 0,
 			Checks: []validator.CheckResult{
 				{
@@ -429,7 +439,7 @@ func TestPrintJSON(t *testing.T) {
 		description string
 	}{
 		{
-			name:        "empty results",
+			name:        testNameEmptyResults,
 			results:     make(map[string]validator.ValidationResult),
 			expectedLen: 0,
 			description: "Should output empty JSON array for no results",
@@ -437,7 +447,7 @@ func TestPrintJSON(t *testing.T) {
 		{
 			name: "single result with title and owner",
 			results: map[string]validator.ValidationResult{
-				"docs/test.md": {
+				testDocsFilePath: {
 					Checks: []validator.CheckResult{
 						{
 							Check: validator.ReviewTooLongAgo,
@@ -455,7 +465,7 @@ func TestPrintJSON(t *testing.T) {
 		{
 			name: "result without title should be skipped",
 			results: map[string]validator.ValidationResult{
-				"docs/test.md": {
+				testDocsFilePath: {
 					Checks: []validator.CheckResult{
 						{
 							Check: validator.NoTitle,
@@ -470,7 +480,7 @@ func TestPrintJSON(t *testing.T) {
 		{
 			name: "multiple owners",
 			results: map[string]validator.ValidationResult{
-				"docs/test.md": {
+				testDocsFilePath: {
 					Checks: []validator.CheckResult{
 						{
 							Check: validator.ReviewTooLongAgo,
@@ -501,12 +511,17 @@ func TestPrintJSON(t *testing.T) {
 			formatter.PrintJSON(tt.results)
 
 			// Restore stdout
-			w.Close()
+			if err := w.Close(); err != nil {
+				os.Stdout = oldStdout
+				t.Fatalf("Failed to close pipe writer: %v", err)
+			}
 			os.Stdout = oldStdout
 
 			// Read captured output
 			var buf bytes.Buffer
-			io.Copy(&buf, r)
+			if _, err := io.Copy(&buf, r); err != nil {
+				t.Fatalf("Failed to read captured output: %v", err)
+			}
 			output := buf.String()
 
 			// Parse JSON output
@@ -578,7 +593,7 @@ func TestPrintStdout(t *testing.T) {
 		description     string
 	}{
 		{
-			name:            "empty results",
+			name:            testNameEmptyResults,
 			results:         make(map[string]validator.ValidationResult),
 			expectedOutputs: []string{}, // Should only show summary
 			expectedCounts:  []string{},
@@ -587,7 +602,7 @@ func TestPrintStdout(t *testing.T) {
 		{
 			name: "single file with failures",
 			results: map[string]validator.ValidationResult{
-				"docs/test.md": {
+				testDocsFilePath: {
 					Checks: []validator.CheckResult{
 						{Check: validator.NoTitle},
 						{Check: validator.NoDescription},
@@ -595,9 +610,9 @@ func TestPrintStdout(t *testing.T) {
 				},
 			},
 			expectedOutputs: []string{
-				"docs/test.md",
-				"NO_TITLE",
-				"NO_DESCRIPTION",
+				testDocsFilePath,
+				validator.NoTitle,
+				validator.NoDescription,
 			},
 			expectedCounts: []string{
 				"Found 2 critical problems",
@@ -607,7 +622,7 @@ func TestPrintStdout(t *testing.T) {
 		{
 			name: "single file with warnings",
 			results: map[string]validator.ValidationResult{
-				"docs/test.md": {
+				testDocsFilePath: {
 					Checks: []validator.CheckResult{
 						{Check: validator.NoWeight},
 						{Check: validator.NoLinkTitle},
@@ -615,9 +630,9 @@ func TestPrintStdout(t *testing.T) {
 				},
 			},
 			expectedOutputs: []string{
-				"docs/test.md",
-				"NO_WEIGHT",
-				"NO_LINK_TITLE",
+				testDocsFilePath,
+				validator.NoWeight,
+				validator.NoLinkTitle,
 			},
 			expectedCounts: []string{
 				"Found 2 less severe problems",
@@ -627,7 +642,7 @@ func TestPrintStdout(t *testing.T) {
 		{
 			name: "mixed severities",
 			results: map[string]validator.ValidationResult{
-				"docs/test.md": {
+				testDocsFilePath: {
 					Checks: []validator.CheckResult{
 						{Check: validator.NoTitle},       // FAIL
 						{Check: validator.NoWeight},      // WARN
@@ -636,10 +651,10 @@ func TestPrintStdout(t *testing.T) {
 				},
 			},
 			expectedOutputs: []string{
-				"docs/test.md",
-				"NO_TITLE",
-				"NO_DESCRIPTION",
-				"NO_WEIGHT",
+				testDocsFilePath,
+				validator.NoTitle,
+				validator.NoDescription,
+				validator.NoWeight,
 			},
 			expectedCounts: []string{
 				"Found 2 critical problems",
@@ -650,12 +665,12 @@ func TestPrintStdout(t *testing.T) {
 		{
 			name: "multiple files",
 			results: map[string]validator.ValidationResult{
-				"docs/file1.md": {
+				testDocsFile1Path: {
 					Checks: []validator.CheckResult{
 						{Check: validator.NoTitle},
 					},
 				},
-				"docs/file2.md": {
+				testDocsFile2Path: {
 					Checks: []validator.CheckResult{
 						{Check: validator.NoWeight},
 					},
@@ -664,8 +679,8 @@ func TestPrintStdout(t *testing.T) {
 			expectedOutputs: []string{
 				"file1.md", // Should contain both filenames
 				"file2.md",
-				"NO_TITLE",
-				"NO_WEIGHT",
+				validator.NoTitle,
+				validator.NoWeight,
 			},
 			expectedCounts: []string{
 				"Found 1 critical problem",
@@ -686,12 +701,17 @@ func TestPrintStdout(t *testing.T) {
 			formatter.PrintStdout(tt.results)
 
 			// Restore stdout
-			w.Close()
+			if err := w.Close(); err != nil {
+				os.Stdout = oldStdout
+				t.Fatalf("Failed to close pipe writer: %v", err)
+			}
 			os.Stdout = oldStdout
 
 			// Read captured output
 			var buf bytes.Buffer
-			io.Copy(&buf, r)
+			if _, err := io.Copy(&buf, r); err != nil {
+				t.Fatalf("Failed to read captured output: %v", err)
+			}
 			output := buf.String()
 
 			// Check expected outputs are present
