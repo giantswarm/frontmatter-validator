@@ -9,9 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-25
+
 ### Added
 
 - New `diataxis_content_type` frontmatter field and two checks for it: `NO_DIATAXIS_CONTENT_TYPE` (the field is missing; required on articles but skipped for `_index.md` list pages, mirroring `NO_USER_QUESTIONS`) and `INVALID_DIATAXIS_CONTENT_TYPE` (the value must be one of `tutorial`, `how-to-guide`, `reference`, `explanation`, `none`). `INVALID_DIATAXIS_CONTENT_TYPE` is enabled by default; `NO_DIATAXIS_CONTENT_TYPE` is opt-in — enable it per repository or directory via configuration once pages are tagged.
+
+## [0.6.0] - 2026-06-17
 
 ### Changed
 
@@ -102,7 +106,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - First implementation
 
-[Unreleased]: https://github.com/giantswarm/frontmatter-validator/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/giantswarm/frontmatter-validator/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/giantswarm/frontmatter-validator/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/giantswarm/frontmatter-validator/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/giantswarm/frontmatter-validator/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/giantswarm/frontmatter-validator/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/giantswarm/frontmatter-validator/compare/v0.3.1...v0.3.2
