@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // Shared fixtures for the tests in this file.
@@ -651,6 +652,9 @@ user_questions:
 }
 
 func TestFlexibleDateValidation(t *testing.T) {
+	// Relative to today, so the recent date never ages past the review expiration.
+	recentReviewDate := time.Now().AddDate(0, 0, -30).Format("2006-01-02")
+
 	tests := []struct {
 		name           string
 		content        string
@@ -692,7 +696,7 @@ user_questions:
 			content: `---
 title: Test
 description: Test description that is long enough and ends with a full stop.
-last_review_date: "2025-11-01"
+last_review_date: "` + recentReviewDate + `"
 owner:
   - https://github.com/orgs/giantswarm/teams/team-honeybadger
 user_questions:
