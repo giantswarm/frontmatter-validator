@@ -12,6 +12,7 @@ import (
 
 	"github.com/giantswarm/frontmatter-validator/pkg/config"
 	"github.com/giantswarm/frontmatter-validator/pkg/output"
+	"github.com/giantswarm/frontmatter-validator/pkg/project"
 	"github.com/giantswarm/frontmatter-validator/pkg/validator"
 )
 
@@ -34,6 +35,7 @@ against a configurable set of rules, creating GitHub Actions run annotations for
 	Args:         cobra.ArbitraryArgs,
 	RunE:         runValidation,
 	SilenceUsage: true,
+	Version:      project.Version(),
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -42,6 +44,15 @@ func Execute() error {
 }
 
 func init() {
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "version",
+		Short: "Print version and build information",
+		Args:  cobra.NoArgs,
+		RunE: func(command *cobra.Command, _ []string) error {
+			_, err := fmt.Fprintf(command.OutOrStdout(), "%s version %s\n", rootCmd.Name(), rootCmd.Version)
+			return err
+		},
+	})
 	rootCmd.Flags().StringVar(&outputFormat, "output", "stdout", "Output format: 'json' or 'stdout'")
 	rootCmd.Flags().StringVar(&targetPath, "path", ".", "Target path to scan for Markdown files")
 	rootCmd.Flags().StringVar(&configPath, "config", "./frontmatter-validator.yaml", "Path to configuration file")
